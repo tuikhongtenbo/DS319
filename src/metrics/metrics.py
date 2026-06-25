@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Any, Dict, List
 
 from ..constants import SPATIAL_RELATIONS
+from ..datasets.preprocessing import extract_predicted_relation, match_prediction
 
 
 def _empty_metrics() -> Dict[str, float]:
@@ -43,8 +44,9 @@ def calculate_spatial_metrics(predictions: List[Dict[str, Any]]) -> Dict[str, fl
     counts = {relation: {"pre": 0, "label": 0, "tp": 0} for relation in SPATIAL_RELATIONS}
 
     for data in prepared:
-        output = data.get("output", "").lower()
         answer = data.get("answer", "").lower()
+        options = data.get("options")
+        output = extract_predicted_relation(data.get("output", ""), options)
 
         for relation in SPATIAL_RELATIONS:
             if relation in output:
@@ -56,7 +58,7 @@ def calculate_spatial_metrics(predictions: List[Dict[str, Any]]) -> Dict[str, fl
                 counts[relation]["label"] += 1
                 break
 
-        if answer == output or answer in output:
+        if match_prediction(output, answer, options):
             for relation in SPATIAL_RELATIONS:
                 if relation == answer:
                     counts[relation]["tp"] += 1
@@ -91,11 +93,12 @@ def calculate_spatial_metrics(predictions: List[Dict[str, Any]]) -> Dict[str, fl
         axis_total = 0
         axis_tp = 0
         for data in prepared:
-            output = data.get("output", "").lower()
             answer = data.get("answer", "").lower()
+            options = data.get("options")
+            output = extract_predicted_relation(data.get("output", ""), options)
             if answer in relations:
                 axis_total += 1
-                if answer == output or answer in output:
+                if match_prediction(output, answer, options):
                     axis_tp += 1
         xyz_accuracies[axis] = axis_tp / axis_total if axis_total > 0 else 0.0
 

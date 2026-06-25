@@ -76,20 +76,58 @@ def normalize_blip_answer(text: str) -> str:
     return normalized.replace("on / above", "on/above").replace("on/ above", "on/above")
 
 
-def match_prediction(output: str, answer: str) -> bool:
-    """Substring match used by the original SpatialMQA evaluation scripts."""
-    output_lower = output.lower()
-    answer_lower = answer.lower()
-    return answer_lower in output_lower or output_lower in answer_lower
+def extract_predicted_relation(output: str, options: List[str] = None) -> str:
+    """
+    Map free-form model text to a single spatial relation.
+
+    Uses longest-option-first matching to avoid partial hits such as
+    matching ``in`` before ``in front of``.
+    """
+    text = output.lower().strip()
+    if not text:
+        return ""
+
+    candidates = options if options else SPATIAL_RELATIONS
+    unique_candidates = sorted({candidate.lower() for candidate in candidates}, key=len, reverse=True)
+    for candidate in unique_candidates:
+        if candidate in text:
+            return candidate
+    return text
+
+
+def match_prediction(output: str, answer: str, options: List[str] = None) -> bool:
+    """
+    Check whether model output matches the ground-truth relation.
+
+    Avoids the false-positive pattern ``output in answer`` which marks empty
+    strings and fragments like ``of`` or ``left`` as correct.
+    """
+    if output is None or not str(output).strip():
+        return False
+
+    predicted = extract_predicted_relation(output, options)
+    if not predicted:
+        return False
+
+    answer_lower = answer.lower().strip()
+    if predicted == answer_lower:
+        return True
+
+    # Allow answer contained in a longer but still valid generation.
+    return answer_lower in predicted
 
 
 def build_result_record(item: Dict, index: int, output: str) -> Dict:
     """Build a prediction record compatible with metrics.py."""
     answer = item["answer"]
-    normalized_output = output.lower().strip()
-    return {
+    options = item.get("options", [])
+    normalized_output = extract_predicted_relation(output, options)
+    record = {
         "id": get_sample_id(item, index),
-        "result": 1 if match_prediction(normalized_output, answer) else 0,
+        "result": 1 if match_prediction(output, answer, options) else 0,
         "output": normalized_output,
         "answer": answer,
     }
+    if options:
+        record["options"] = options
+    return record
