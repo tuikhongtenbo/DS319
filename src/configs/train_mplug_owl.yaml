@@ -1,5 +1,5 @@
 model:
-  model_name_or_path: "mplug-owl-7b"
+  model_name_or_path: "MAGAer13/mplug-owl-llama-7b"
   model_type: "mplug"
   use_lora: true
   lora_r: 16

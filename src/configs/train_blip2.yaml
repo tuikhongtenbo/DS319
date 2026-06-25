@@ -1,5 +1,5 @@
 model:
-  model_name_or_path: "blip2-opt-2.7b"
+  model_name_or_path: "Salesforce/blip2-opt-2.7b"
   model_type: "blip2-opt-2.7b"
   use_lora: true
   lora_r: 16

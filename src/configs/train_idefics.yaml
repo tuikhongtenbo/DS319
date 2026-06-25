@@ -1,5 +1,5 @@
 model:
-  model_name_or_path: "idefics"
+  model_name_or_path: "HuggingFaceM4/idefics-9b-instruct"
   model_type: "idefics"
   use_lora: true
   lora_r: 16

@@ -1,5 +1,5 @@
 model:
-  model_name_or_path: "llava-v1.5-7b"
+  model_name_or_path: "liuhaotian/llava-v1.5-7b"
   model_type: "llava"
   use_lora: true
   lora_r: 128
