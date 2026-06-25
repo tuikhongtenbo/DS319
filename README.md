@@ -178,3 +178,10 @@ Metrics are printed and saved to `{out_results}/metrics.json`.
 - BLIP2 training uses manual cross-entropy with `ignore_index=1` and early stopping on dev loss, matching the original repo.
 - LLaVA / SpaceLLaVA / mPLUG-Owl finetuning still depends on upstream repositories; DS319 generates the required data files and shell scripts.
 - If GPU memory is limited, reduce `--batch_size` to `1` or `2`.
+- Large model downloads (LLaVA, mPLUG-Owl, ~10 GB) disable XET automatically in `main.py`. If a download fails mid-way, remove the partial cache entry and retry:
+
+```bash
+rm -rf ~/.cache/huggingface/hub/models--liuhaotian--llava-v1.5-7b
+bash scripts/download_hf_model.sh liuhaotian/llava-v1.5-7b
+df -h /workspace   # ensure >15 GB free
+```

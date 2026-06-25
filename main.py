@@ -10,9 +10,12 @@ from pathlib import Path
 from src.configs.config import ExperimentConfig
 from src.datasets.preprocessing import build_result_record, resolve_test_path
 from src.metrics.metrics import calculate_spatial_metrics
+from src.utils.hf_hub import configure_hf_hub_downloads
 from src.utils.io import load_jsonl, save_jsonl
 from src.utils.logging import setup_logger
 from src.utils.seed import set_seed
+
+configure_hf_hub_downloads()
 
 logger = setup_logger(__name__)
 
