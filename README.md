@@ -40,12 +40,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-For LLaVA / SpaceLLaVA / mPLUG-Owl, also install the corresponding requirement file and external repo:
+For LLaVA / SpaceLLaVA, install from the upstream repo (do **not** rely on `pip install llava` alone — it pins `torch==2.1.2`, which is unavailable on Python 3.12+):
 
 ```bash
-pip install -r src/requirements/requirement_llava.txt
-bash scripts/setup_llava.sh
+bash scripts/setup_llava.sh /workspace/LLaVA
 ```
+
+For mPLUG-Owl, clone [X-PLUG/mPLUG-Owl](https://github.com/X-PLUG/mPLUG-Owl) and add its `mPLUG-Owl/` directory to `PYTHONPATH`.
 
 ### 2. Dataset Preparation
 
