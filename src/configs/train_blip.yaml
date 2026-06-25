@@ -3,7 +3,7 @@ model:
   model_type: "blip-vqa-base"
   use_lora: false
 dataset:
-  data_path: "data/train.jsonl"
+  data_path: "src/datasets/data"
   image_dir: "data/images"
 training:
   output_dir: "./outputs/blip"

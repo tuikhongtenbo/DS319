@@ -14,7 +14,10 @@ from src.datasets.dataset import SpatialMQADataset
 from src.models.builder import build_model_and_processor
 from src.trainers.trainer import Trainer
 from src.trainers.llava_trainer import LLaVATrainerWrapper
-from src.inference.predictor import OpenSourcePredictor, APIPredictor
+from src.inference.inference_opensource import OpenSourcePredictor
+from src.inference.inference_gpt_0_shot import GPTZeroShotPredictor
+from src.inference.inference_gpt_1_shot import GPTOneShotPredictor
+from src.inference.inference_qwen import QwenPredictor
 from src.metrics.metrics import calculate_spatial_metrics
 from src.utils.io import load_jsonl, save_jsonl
 from src.utils.seed import set_seed
@@ -57,8 +60,6 @@ def run_train(args, config):
         
         batch_size = args.batch_size or config.training.batch_size
         
-        # Assume jsonl_dir is a file path if it ends with jsonl, otherwise we append train.jsonl
-        # In a real scenario, you'd split train/val
         data_path = Path(args.jsonl_dir or config.dataset.data_path)
         if data_path.is_dir():
             train_path = data_path / "train.jsonl"
@@ -107,28 +108,57 @@ def run_train(args, config):
 
 def run_infer(args, config):
     model_type = config.model.model_type.lower()
+    data_path = Path(args.jsonl_dir or config.dataset.data_path)
     
-    if model_type in ["gpt-4o", "qwen-3.6"]:
-        logger.info(f"Initializing API Predictor for {model_type}")
-        predictor = APIPredictor(model_name=model_type, api_key=args.api_key, shots=args.shots)
+    if data_path.is_dir():
+        train_data_path = data_path / "train.jsonl"
+        target_data_path = data_path / "test.jsonl"
+        if not target_data_path.exists():
+            target_data_path = data_path / "dev.jsonl"
+    else:
+        target_data_path = data_path
+        train_data_path = data_path.parent / "train.jsonl"
+        if not train_data_path.exists():
+            train_data_path = target_data_path
+
+    if "gpt-4" in model_type:
+        logger.info(f"Initializing GPT Predictor ({args.shots}-shot)")
+        if args.shots >= 1:
+            predictor = GPTOneShotPredictor(
+                model_name=model_type, 
+                api_key=args.api_key, 
+                train_data_path=str(train_data_path), 
+                image_dir=args.image_dir or config.dataset.image_dir
+            )
+        else:
+            predictor = GPTZeroShotPredictor(model_name=model_type, api_key=args.api_key)
+            
+    elif "qwen" in model_type:
+        logger.info(f"Initializing Qwen API Predictor ({args.shots}-shot)")
+        predictor = QwenPredictor(
+            model_name=model_type, 
+            api_key=args.api_key, 
+            shots=args.shots,
+            train_data_path=str(train_data_path) if args.shots >= 1 else None,
+            image_dir=args.image_dir or config.dataset.image_dir if args.shots >= 1 else None
+        )
     else:
         logger.info(f"Building Open Source Model: {model_type}")
         model, processor = build_model_and_processor(config.model)
-        # If inferencing a trained model, load checkpoint
         if args.out_checkpoint and Path(args.out_checkpoint).exists():
             logger.info(f"Loading trained weights from {args.out_checkpoint}")
-            model.load_adapter(str(Path(args.out_checkpoint) / "best_model")) # Load LoRA
+            model.load_adapter(str(Path(args.out_checkpoint) / "best_model"))
             
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         predictor = OpenSourcePredictor(model=model, processor=processor, device=device)
         
-    data_path = args.jsonl_dir or config.dataset.data_path
-    logger.info(f"Loading test dataset from {data_path}")
-    test_data = load_jsonl(data_path)
+    logger.info(f"Loading test dataset from {target_data_path}")
+    test_data = load_jsonl(str(target_data_path))
     image_dir = Path(args.image_dir or config.dataset.image_dir)
     
     predictions = []
     
+    from tqdm import tqdm
     logger.info("Starting inference...")
     for item in tqdm(test_data):
         image_path = image_dir / item["image"]
@@ -151,7 +181,6 @@ def run_infer(args, config):
     logger.info(f"Saving predictions to {out_path}")
     save_jsonl(predictions, str(out_path))
     
-    # Optionally run eval immediately
     run_eval(predictions)
 
 def run_eval(predictions=None, args=None):

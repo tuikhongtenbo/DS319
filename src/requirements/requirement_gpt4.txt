@@ -22,4 +22,3 @@ tqdm==4.66.4
 typing_extensions==4.11.0
 urllib3==2.2.1
 wheel==0.43.0
-Could not fetch URL https://mirrors.aliyun.com/pypi/simple/pip/: There was a problem confirming the ssl certificate: HTTPSConnectionPool(host='mirrors.aliyun.com', port=443): Max retries exceeded with url: /pypi/simple/pip/ (Caused by SSLError(SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:1135)'))) - skipping
