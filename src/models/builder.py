@@ -21,7 +21,7 @@ from peft import LoraConfig, get_peft_model
 from ..configs.config import ModelConfig
 
 
-def build_model_and_processor(config: ModelConfig) -> Tuple[Any, Any]:
+def build_model_and_processor(config: ModelConfig, mode: str = "train") -> Tuple[Any, Any]:
     """
     Builds the model and processor based on the configuration.
     """
@@ -48,15 +48,14 @@ def build_model_and_processor(config: ModelConfig) -> Tuple[Any, Any]:
         processor = InstructBlipProcessor.from_pretrained(model_name_or_path)
         model = InstructBlipForConditionalGeneration.from_pretrained(model_name_or_path, **kwargs)
     elif "llava" in model_type or "spacellava" in model_type or "mplug" in model_type:
-        # LLaVA and mPLUG-Owl models usually can be loaded with Auto classes 
-        # or require trust_remote_code=True depending on version
         processor = AutoProcessor.from_pretrained(model_name_or_path, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=True, **kwargs)
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
-    # Wrap model with LoRA if specified
-    if config.use_lora:
+    # Wrap model with LoRA if specified AND we are training. 
+    # For inference, PeftModel.from_pretrained will be used instead.
+    if config.use_lora and mode == "train":
         lora_config = LoraConfig(
             r=config.lora_r,
             lora_alpha=config.lora_alpha,

@@ -26,8 +26,15 @@ class OpenSourcePredictor:
                   f"Note that you only need to choose one option from the all options without explaining any reason.\n"
                   f"Input: Image: <image>, Question: {question}, Options: {'; '.join(options)}.\nOutput:")
                   
-        inputs = self.processor(images=image, text=prompt, return_tensors="pt").to(self.device)
+        inputs = self.processor(images=image, text=prompt, return_tensors="pt")
+        # Move inputs to the same device as the model
+        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
         
+        # Determine the correct dtype from the model's parameters
+        model_dtype = next(self.model.parameters()).dtype
+        if "pixel_values" in inputs:
+            inputs["pixel_values"] = inputs["pixel_values"].to(model_dtype)
+            
         outputs = self.model.generate(**inputs, max_new_tokens=20)
         
         response = self.processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()

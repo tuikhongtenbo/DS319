@@ -144,10 +144,16 @@ def run_infer(args, config):
         )
     else:
         logger.info(f"Building Open Source Model: {model_type}")
-        model, processor = build_model_and_processor(config.model)
+        model, processor = build_model_and_processor(config.model, mode="infer")
+        
         if args.out_checkpoint and Path(args.out_checkpoint).exists():
-            logger.info(f"Loading trained weights from {args.out_checkpoint}")
-            model.load_adapter(str(Path(args.out_checkpoint) / "best_model"))
+            lora_path = str(Path(args.out_checkpoint) / "best_model")
+            if Path(lora_path).exists():
+                logger.info(f"Loading trained LoRA weights from {lora_path}")
+                from peft import PeftModel
+                model = PeftModel.from_pretrained(model, lora_path)
+            else:
+                logger.warning(f"Could not find best_model at {lora_path}. Using base model.")
             
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         predictor = OpenSourcePredictor(model=model, processor=processor, device=device)
