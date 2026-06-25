@@ -1,0 +1,14 @@
+model:
+  model_name_or_path: "idefics"
+  model_type: "idefics"
+  use_lora: true
+  lora_r: 16
+dataset:
+  data_path: "data/train.jsonl"
+  image_dir: "data/images"
+training:
+  output_dir: "./outputs/idefics"
+  num_epochs: 10
+  batch_size: 8
+  patience: 10
+  learning_rate: 2.0e-04

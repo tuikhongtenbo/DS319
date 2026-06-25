@@ -1,0 +1,14 @@
+model:
+  model_name_or_path: "llava-v1.5-7b"
+  model_type: "llava"
+  use_lora: true
+  lora_r: 128
+dataset:
+  data_path: "data/train.jsonl"
+  image_dir: "data/images"
+training:
+  output_dir: "./outputs/llava"
+  num_epochs: 10
+  batch_size: 8
+  patience: 10
+  learning_rate: 2.0e-04

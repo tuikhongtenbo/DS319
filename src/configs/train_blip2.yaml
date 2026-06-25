@@ -1,0 +1,14 @@
+model:
+  model_name_or_path: "blip2-opt-2.7b"
+  model_type: "blip2-opt-2.7b"
+  use_lora: true
+  lora_r: 16
+dataset:
+  data_path: "data/train.jsonl"
+  image_dir: "data/images"
+training:
+  output_dir: "./outputs/blip2"
+  num_epochs: 30
+  batch_size: 8
+  patience: 5
+  learning_rate: 4.0e-05

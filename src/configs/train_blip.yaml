@@ -1,0 +1,13 @@
+model:
+  model_name_or_path: "blip-vqa-base"
+  model_type: "blip-vqa-base"
+  use_lora: false
+dataset:
+  data_path: "data/train.jsonl"
+  image_dir: "data/images"
+training:
+  output_dir: "./outputs/blip"
+  num_epochs: 30
+  batch_size: 8
+  patience: 5
+  learning_rate: 6.0e-07
