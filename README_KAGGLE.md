@@ -42,8 +42,8 @@ Kaggle cell for training. Make sure to point the `--image_dir` and `--jsonl_dir`
 !python main.py \
     --mode train \
     --config src/configs/train_blip2.yaml \
-    --image_dir /kaggle/input/coco2017-dataset/images \
-    --jsonl_dir /kaggle/input/spatialmqa-dataset/src/datasets/data \
+    --image_dir ./data/images/COCO2017 \
+    --jsonl_dir ./src/datasets/data \
     --out_checkpoint /kaggle/working/outputs/blip2_checkpoints \
     --out_results /kaggle/working/outputs/blip2_results \
     --batch_size 8
@@ -58,8 +58,8 @@ To run inference on Kaggle using a trained open-source model:
 !python main.py \
     --mode infer \
     --config src/configs/train_blip2.yaml \
-    --image_dir /kaggle/input/coco2017-dataset/images \
-    --jsonl_dir /kaggle/input/spatialmqa-dataset/src/datasets/data/test.jsonl \
+    --image_dir ./data/images/COCO2017 \
+    --jsonl_dir ./src/datasets/data/test.jsonl \
     --out_checkpoint /kaggle/working/outputs/blip2_checkpoints \
     --out_results /kaggle/working/outputs/blip2_results
 ```
@@ -84,8 +84,8 @@ os.system(f"""
 python main.py \
     --mode infer \
     --config src/configs/train_gpt.yaml \
-    --image_dir /kaggle/input/coco2017-dataset/images \
-    --jsonl_dir /kaggle/input/spatialmqa-dataset/src/datasets/data/test.jsonl \
+    --image_dir ./data/images/COCO2017 \
+    --jsonl_dir ./src/datasets/data/test.jsonl \
     --out_results /kaggle/working/outputs/gpt4_results \
     --api_key {api_key} \
     --shots 1
