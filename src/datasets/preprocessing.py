@@ -54,6 +54,24 @@ def build_spatial_prompt(question: str, options: List[str]) -> str:
     )
 
 
+def decode_blip_output(processor, generated_ids, prompt: str) -> str:
+    """
+    Decode BLIP-VQA generation output.
+
+    BLIP returns decoder token ids; slicing by encoder ``input_ids`` length
+    produces empty strings. The original SpatialMQA repo decodes the full
+    sequence, then optionally strips an echoed prompt prefix.
+    """
+    full_text = processor.decode(generated_ids, skip_special_tokens=True).strip()
+    if not full_text:
+        return ""
+
+    prompt_clean = prompt.strip()
+    if full_text.lower().startswith(prompt_clean.lower()):
+        return full_text[len(prompt_clean):].strip()
+    return full_text
+
+
 def build_blip_prompt(question: str, options: List[str]) -> str:
     """BLIP zero-shot / finetuned prompt format from the original repo."""
     if not options:

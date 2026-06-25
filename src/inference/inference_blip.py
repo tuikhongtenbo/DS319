@@ -13,6 +13,7 @@ from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import (
     build_blip_prompt,
     build_result_record,
+    decode_blip_output,
     normalize_blip_answer,
     resolve_test_path,
 )
@@ -38,9 +39,7 @@ class BlipPredictor:
         inputs = self.processor(images=image, text=prompt, return_tensors="pt").to(self.device)
 
         outputs = self.model.generate(**inputs, max_new_tokens=20)
-        input_len = inputs.input_ids.shape[1]
-        generated_ids = outputs[:, input_len:]
-        decoded = self.processor.decode(generated_ids[0], skip_special_tokens=True).strip()
+        decoded = decode_blip_output(self.processor, outputs[0], prompt)
 
         if self.finetuned:
             decoded = normalize_blip_answer(decoded)
