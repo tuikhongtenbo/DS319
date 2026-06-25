@@ -107,9 +107,28 @@ def extract_predicted_relation(output: str, options: List[str] = None) -> str:
 
     candidates = options if options else SPATIAL_RELATIONS
     unique_candidates = sorted({candidate.lower() for candidate in candidates}, key=len, reverse=True)
+    
+    # 1. Exact canonical substring match
     for candidate in unique_candidates:
         if candidate in text:
             return candidate
+
+    # 2. Synonym match for models that output partial phrases (e.g., "left" instead of "left of")
+    import re
+    synonym_map = {
+        "in front": "in front of",
+        "above": "on/above",
+        "front": "in front of",
+        "left": "left of",
+        "right": "right of",
+        "on": "on/above",
+    }
+    
+    for syn, canonical in synonym_map.items():
+        if re.search(r'\b' + re.escape(syn) + r'\b', text):
+            if canonical in unique_candidates:
+                return canonical
+
     return text
 
 
