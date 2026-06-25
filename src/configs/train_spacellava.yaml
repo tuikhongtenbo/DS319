@@ -3,12 +3,13 @@ model:
   model_type: "spacellava"
   use_lora: true
   lora_r: 128
+  lora_alpha: 256
 dataset:
   data_path: "src/datasets/data"
-  image_dir: "data/images"
+  image_dir: "data/images/COCO2017"
 training:
   output_dir: "./outputs/spacellava"
-  num_epochs: 10
+  num_epochs: 2
   batch_size: 8
-  patience: 10
+  patience: 5
   learning_rate: 2.0e-04

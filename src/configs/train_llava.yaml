@@ -3,9 +3,10 @@ model:
   model_type: "llava"
   use_lora: true
   lora_r: 128
+  lora_alpha: 256
 dataset:
   data_path: "src/datasets/data"
-  image_dir: "data/images"
+  image_dir: "data/images/COCO2017"
 training:
   output_dir: "./outputs/llava"
   num_epochs: 10

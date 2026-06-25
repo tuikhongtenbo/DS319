@@ -3,9 +3,12 @@ model:
   model_type: "blip2-opt-2.7b"
   use_lora: true
   lora_r: 16
+  lora_alpha: 32
+  lora_target_modules: ["q_proj", "k_proj"]
+  load_in_8bit: true
 dataset:
   data_path: "src/datasets/data"
-  image_dir: "data/images"
+  image_dir: "data/images/COCO2017"
 training:
   output_dir: "./outputs/blip2"
   num_epochs: 30

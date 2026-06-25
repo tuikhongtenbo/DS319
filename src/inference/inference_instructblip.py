@@ -2,22 +2,26 @@
 Inference script specialized for InstructBLIP (Salesforce/instructblip-flan-t5-xl).
 """
 
-import logging
 from pathlib import Path
-import json
-import torch
-from tqdm import tqdm
-from PIL import Image
 
-from transformers import InstructBlipProcessor, InstructBlipForConditionalGeneration
+import torch
+from PIL import Image
+from tqdm import tqdm
 from peft import PeftModel
+from transformers import InstructBlipForConditionalGeneration, InstructBlipProcessor
 
 from ..configs.config import ExperimentConfig
+from ..datasets.preprocessing import (
+    build_result_record,
+    build_spatial_prompt,
+    resolve_test_path,
+)
 from ..metrics.metrics import calculate_spatial_metrics
 from ..utils.io import load_jsonl, save_jsonl
 from ..utils.logging import setup_logger
 
 logger = setup_logger(__name__)
+
 
 class InstructBlipPredictor:
     def __init__(self, model, processor, device):
@@ -28,91 +32,59 @@ class InstructBlipPredictor:
 
     @torch.no_grad()
     def predict(self, image_path: str, question: str, options: list) -> str:
-        try:
-            image = Image.open(image_path).convert("RGB")
-        except Exception as e:
-            logger.error(f"Failed to open image {image_path}: {e}")
-            return "--"
-            
-        options_str = "; ".join(options)
-        
-        # SpatialMQA exact prompt formatting for InstructBLIP
-        prompt = f"You are currently a senior expert in spatial relation reasoning. \n Given an Image, a Question and Options, your task is to answer the correct spatial relation. Note that you only need to choose one option from the all options without explaining any reason. \n Input: Image: <image>, Question: {question}, Options: {options_str}. \n Output:"
-        
+        image = Image.open(image_path).convert("RGB")
+        prompt = build_spatial_prompt(question, options)
         inputs = self.processor(images=image, text=prompt, return_tensors="pt").to(self.device)
-        
-        with torch.inference_mode():
-            outputs = self.model.generate(**inputs, max_new_tokens=20)
-            
-        decoded = self.processor.batch_decode(outputs, skip_special_tokens=True)[0].strip().rstrip('.')
-        return decoded
+
+        outputs = self.model.generate(**inputs, max_new_tokens=20)
+        decoded = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
+        return decoded.strip().rstrip(".")
+
 
 def run_infer(args, config: ExperimentConfig):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     logger.info("Building InstructBLIP model and processor for inference...")
     processor = InstructBlipProcessor.from_pretrained(config.model.model_name_or_path)
-    
+
     kwargs = {"device_map": config.model.device_map}
     if config.model.load_in_8bit:
         kwargs["load_in_8bit"] = True
     elif config.model.load_in_4bit:
         kwargs["load_in_4bit"] = True
-        
-    model = InstructBlipForConditionalGeneration.from_pretrained(config.model.model_name_or_path, **kwargs)
-    
-    # Check for LoRA checkpoints
+
+    model = InstructBlipForConditionalGeneration.from_pretrained(
+        config.model.model_name_or_path, **kwargs
+    )
+
     if args.out_checkpoint and Path(args.out_checkpoint).exists():
         lora_path = Path(args.out_checkpoint) / "best_model"
         if lora_path.exists():
             logger.info(f"Loading trained LoRA weights from {lora_path}")
             model = PeftModel.from_pretrained(model, str(lora_path))
-        else:
-            logger.warning(f"Could not find best_model at {lora_path}. Using base model.")
-            
+
     if not config.model.load_in_8bit and not config.model.load_in_4bit:
         model = model.to(device)
-        
+
     predictor = InstructBlipPredictor(model, processor, device)
-    
-    # Load dataset
-    data_path = Path(args.jsonl_dir or config.dataset.data_path)
-    if data_path.is_dir():
-        target_path = data_path / "test.jsonl"
-        if not target_path.exists():
-            target_path = data_path / "dev.jsonl"
-    else:
-        target_path = data_path
-        
+
+    target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
     logger.info(f"Loading test dataset from {target_path}")
     test_data = load_jsonl(str(target_path))
     image_dir = Path(args.image_dir or config.dataset.image_dir)
-    
+
     predictions = []
-    
     logger.info("Starting InstructBLIP inference...")
-    for item in tqdm(test_data):
+    for index, item in enumerate(tqdm(test_data)):
         image_path = image_dir / item["image"]
-        question = item["question"]
-        options = item.get("options", [])
-        
-        output = predictor.predict(str(image_path), question, options)
-        
-        result_item = {
-            "id": item["id"],
-            "result": 1 if output.lower() in item["answer"] or item["answer"] in output.lower() else 0,
-            "output": output.lower(),
-            "answer": item["answer"]
-        }
-        predictions.append(result_item)
-        
+        output = predictor.predict(str(image_path), item["question"], item.get("options", []))
+        predictions.append(build_result_record(item, index, output))
+
     out_results = Path(args.out_results) if args.out_results else Path("results")
     out_results.mkdir(parents=True, exist_ok=True)
     out_path = out_results / "predictions.jsonl"
-    
-    logger.info(f"Saving predictions to {out_path}")
     save_jsonl(predictions, str(out_path))
-    
+
     metrics = calculate_spatial_metrics(predictions)
     logger.info("--- InstructBLIP Evaluation Results ---")
     logger.info(f"Accuracy:    {metrics['accuracy']:.4f}")

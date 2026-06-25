@@ -1,14 +1,13 @@
 model:
-  model_name_or_path: "MAGAer13/mplug-owl-llama-7b"
-  model_type: "mplug"
-  use_lora: true
-  lora_r: 16
+  model_name_or_path: "MAGAer13/mplug-owl-llama-7b-pt"
+  model_type: "mplug-owl-7b"
 dataset:
   data_path: "src/datasets/data"
-  image_dir: "data/images"
+  image_dir: "data/images/COCO2017"
 training:
   output_dir: "./outputs/mplug_owl"
   num_epochs: 10
-  batch_size: 8
-  patience: 10
+  batch_size: 4
+  cal_num: 2
+  patience: 5
   learning_rate: 5.0e-05

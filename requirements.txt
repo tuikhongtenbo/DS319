@@ -1,0 +1,4 @@
+# Default dependencies for in-repo BLIP / BLIP2 / InstructBLIP training and inference.
+# Model-specific extras are in src/requirements/.
+
+-r src/requirements/requirement_blip.txt

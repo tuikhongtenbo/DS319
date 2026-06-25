@@ -1,6 +1,7 @@
 # Core packages required for BLIP/BLIP2 in SpatialMQA
 # Cleaned up sub-dependencies to avoid resolution conflicts.
 
+torch>=2.1.0
 accelerate>=0.25.0
 peft>=0.10.0
 transformers>=4.35.2

@@ -1,65 +1,80 @@
 # SpatialMQA Reimplementation
 
-This repository is a clean, production-ready reimplementation of SpatialMQA. It provides a unified pipeline for fine-tuning and inferencing both open-source models (BLIP, BLIP2, InstructBLIP, mPLUG-Owl, IDEFICS, LLaVA, SpaceLLaVA) and API-based models (GPT-4, Qwen).
+Clean reimplementation of [SpatialMQA](https://github.com/liuziyan/SpatialMQA) aligned with the original training and inference behavior. This repository provides a unified dispatcher (`main.py`) over model-specific trainers and inference scripts.
 
-### 🛠️ Decoupled Architecture (Model-Specific Scripts)
-To prevent cross-compatibility errors (where a certain model depends on specific tokens, input/output structures, or training wrappers), this codebase is **fully decoupled**:
-- **`src/trainers/`**: Houses independent, model-specific training loops (e.g. `train_blip2.py`, `train_idefics.py`). Each script handles its own Dataset format, collator, and training loop.
-- **`src/inference/`**: Houses independent, model-specific inference logic (e.g. `inference_blip2.py`, `inference_llava.py`).
-- **`main.py`**: Acts as a thin dispatcher that parses CLI arguments and dynamically routes the task to the corresponding model-specific script. Giao diện câu lệnh chạy (`main.py`) không thay đổi.
+## Supported Models
 
-## 🚀 Getting Started (Local GPU)
+| Task | Model | Setting |
+|------|-------|---------|
+| Inference | BLIP2-opt-2.7B | Zero-shot / LoRA |
+| Inference | InstructBLIP-3B | Zero-shot |
+| Inference | mPLUG-Owl-7B | Zero-shot / LoRA |
+| Inference | LLaVA1.5-7B | Zero-shot / LoRA |
+| Inference | SpaceLLaVA | Zero-shot / LoRA |
+| Inference | GPT-4o | 0-shot / 1-shot |
+| Finetune | BLIP-vqa-base | Full |
+| Finetune | BLIP2-opt-2.7B | LoRA (in-repo) |
+| Finetune | LLaVA1.5-7B | LoRA (external script) |
+| Finetune | SpaceLLaVA | LoRA (external script) |
+
+Deprecated but still available: IDEFICS, InstructBLIP finetune, Qwen.
+
+## Architecture
+
+- `src/trainers/` — model-specific training loops or external script generators
+- `src/inference/` — model-specific inference logic
+- `src/datasets/preprocessing.py` — shared prompts and path helpers
+- `src/datasets/collator.py` — batch padding for BLIP-family trainers
+- `src/metrics/metrics.py` — macro P/R/F1/Acc aligned with original eval
+- `main.py` — CLI dispatcher for train / infer / eval
+
+## Getting Started
 
 ### 1. Installation
 
-First, clone this repository and set up a virtual environment:
 ```bash
-git clone <repo_url>
+git clone https://github.com/tuikhongtenbo/DS319.git
 cd DS319
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Next, install the core dependencies. Note that different models have specific requirements. We have provided requirement files in `src/requirements/`.
+For LLaVA / SpaceLLaVA / mPLUG-Owl, also install the corresponding requirement file and external repo:
 
 ```bash
-# Example for BLIP / BLIP2
-pip install -r src/requirements/requirement_blip.txt
-
-# Example for LLaVA
 pip install -r src/requirements/requirement_llava.txt
+bash scripts/setup_llava.sh
 ```
 
 ### 2. Dataset Preparation
 
-Ensure your dataset structure looks like this. You can download the COCO2017 test images using the provided script or manually:
+Bundled splits live in `src/datasets/data/`:
 
-```bash
-mkdir -p data/images
-cd data/images
-wget http://images.cocodataset.org/zips/test2017.zip
-unzip -q test2017.zip
-mv test2017 COCO2017
-rm test2017.zip
-cd ../..
+```text
+src/datasets/data/
+├── train.jsonl   # 3780 samples
+├── dev.jsonl     # 536 samples
+└── test.jsonl    # 1076 samples
 ```
 
-Your final folder structure should be:
+Download COCO2017 test images:
+
+```bash
+bash scripts/download_coco.sh
+```
+
+Expected image layout:
+
 ```text
-data/
-├── images/
-│   └── COCO2017/
-│       ├── image1.jpg
-│       └── ...
-└── dataset/
-    ├── train.jsonl
-    ├── dev.jsonl
-    └── test.jsonl
+data/images/COCO2017/
+├── 000000000933.jpg
+└── ...
 ```
 
 ### 3. Fine-Tuning
 
-We provide a unified entrypoint script `main.py` for training. 
+**BLIP2 LoRA (in-repo):**
 
 ```bash
 python main.py \
@@ -68,58 +83,97 @@ python main.py \
     --image_dir ./data/images/COCO2017 \
     --jsonl_dir ./src/datasets/data \
     --out_checkpoint ./outputs/blip2_checkpoints \
-    --out_results ./outputs/blip2_results \
+    --out_results ./outputs/blip2_logs \
     --batch_size 8
 ```
-- During training, the best model will be saved at `--out_checkpoint/best_model` based on the highest dev accuracy.
-- Training metrics (`losses.json`, `log.json`, `dev_acc.json`) are saved to `--out_results`.
+
+- Best checkpoint: `--out_checkpoint/best_model` (selected by lowest dev loss)
+- Logs: `losses.json`, `dev_loss.json`, `log.json` under `--out_results`
+
+**BLIP full fine-tune:**
+
+```bash
+python main.py \
+    --mode train \
+    --config src/configs/train_blip.yaml \
+    --image_dir ./data/images/COCO2017 \
+    --jsonl_dir ./src/datasets/data \
+    --out_checkpoint ./outputs/blip_checkpoints \
+    --out_results ./outputs/blip_logs
+```
+
+**LLaVA / SpaceLLaVA (external DeepSpeed):**
+
+```bash
+python main.py \
+    --mode train \
+    --config src/configs/train_llava.yaml \
+    --image_dir ./data/images/COCO2017 \
+    --jsonl_dir ./src/datasets/data \
+    --out_checkpoint ./outputs/llava_checkpoints \
+    --out_results ./outputs/llava_logs
+```
+
+Then run the generated script inside your LLaVA checkout:
+
+```bash
+bash outputs/llava_checkpoints/train_llava.sh
+```
 
 ### 4. Inference
 
-To evaluate a model or generate predictions on the test set:
+**Open-source model:**
 
-**For Open-Source Models:**
 ```bash
 python main.py \
     --mode infer \
     --config src/configs/train_blip2.yaml \
     --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data/test.jsonl \
+    --jsonl_dir ./src/datasets/data \
     --out_checkpoint ./outputs/blip2_checkpoints \
     --out_results ./outputs/blip2_results
 ```
 
-**For API Models (e.g., GPT-4 Zero-Shot):**
+**GPT-4o zero-shot:**
+
 ```bash
 python main.py \
     --mode infer \
     --config src/configs/train_gpt.yaml \
     --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data/test.jsonl \
-    --out_results ./outputs/gpt4_results \
+    --jsonl_dir ./src/datasets/data \
+    --out_results ./outputs/gpt4o_results \
     --api_key YOUR_API_KEY \
     --shots 0
 ```
 
-**For API Models (e.g., GPT-4 One-Shot):**
-By setting `--shots 1`, the script dynamically fetches an example from your training data to act as the few-shot prompt.
+**GPT-4o one-shot:**
+
 ```bash
 python main.py \
     --mode infer \
     --config src/configs/train_gpt.yaml \
     --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data/test.jsonl \
-    --out_results ./outputs/gpt4_results \
+    --jsonl_dir ./src/datasets/data \
+    --out_results ./outputs/gpt4o_results \
     --api_key YOUR_API_KEY \
     --shots 1
 ```
 
-### 5. Evaluation
+Predictions are saved to `{out_results}/predictions.jsonl`.
 
-If you only want to compute metrics (Accuracy, Precision, Recall, F1, and XYZ granular accuracy) from an existing prediction file:
+### 5. Evaluation
 
 ```bash
 python main.py \
     --mode eval \
     --out_results ./outputs/blip2_results
 ```
+
+Metrics are printed and saved to `{out_results}/metrics.json`.
+
+## Notes
+
+- BLIP2 training uses manual cross-entropy with `ignore_index=1` and early stopping on dev loss, matching the original repo.
+- LLaVA / SpaceLLaVA / mPLUG-Owl finetuning still depends on upstream repositories; DS319 generates the required data files and shell scripts.
+- If GPU memory is limited, reduce `--batch_size` to `1` or `2`.

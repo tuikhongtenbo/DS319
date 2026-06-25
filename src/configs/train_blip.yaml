@@ -4,7 +4,7 @@ model:
   use_lora: false
 dataset:
   data_path: "src/datasets/data"
-  image_dir: "data/images"
+  image_dir: "data/images/COCO2017"
 training:
   output_dir: "./outputs/blip"
   num_epochs: 30

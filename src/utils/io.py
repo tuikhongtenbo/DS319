@@ -42,3 +42,21 @@ def save_jsonl(data: List[Dict[str, Any]], filepath: Union[str, Path]) -> None:
     with open(filepath, 'w', encoding='utf-8') as f:
         for item in data:
             f.write(json.dumps(item, ensure_ascii=False) + '\n')
+
+
+def ensure_sample_ids(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Ensure every record has an integer id field."""
+    updated: List[Dict[str, Any]] = []
+    for index, item in enumerate(data):
+        record = dict(item)
+        if "id" not in record:
+            record["id"] = index
+        updated.append(record)
+    return updated
+
+
+def add_ids_to_jsonl_file(filepath: Union[str, Path]) -> None:
+    """Add sequential ids to a JSONL file when missing."""
+    filepath = Path(filepath)
+    data = load_jsonl(filepath)
+    save_jsonl(ensure_sample_ids(data), filepath)

@@ -3,73 +3,67 @@ Training wrapper for SpaceLLaVA.
 Generates the formatting data and bash script required for SpaceLLaVA training.
 """
 
-import logging
 from pathlib import Path
-import json
 
 from ..configs.config import ExperimentConfig
+from ..datasets.preprocessing import get_sample_id, resolve_split_paths
 from ..utils.io import load_json, load_jsonl, save_json
 from ..utils.logging import setup_logger
 
 logger = setup_logger(__name__)
 
-def convert_to_spacellava_format(data_path: str, output_path: str):
+
+def convert_to_spacellava_format(data_path: str, output_path: str) -> None:
     path = Path(data_path)
     if path.suffix == ".jsonl":
         data = load_jsonl(path)
     else:
         data = load_json(path)
-        
+
     llava_data = []
-    for idx, item in enumerate(data):
+    for index, item in enumerate(data):
         llava_item = {
-            "id": item.get("id", str(idx)),
+            "id": get_sample_id(item, index),
             "image": item["image"],
             "conversations": [
-                {
-                    "from": "human",
-                    "value": f"<image>\n{item['question']}"
-                },
-                {
-                    "from": "gpt",
-                    "value": str(item["answer"])
-                }
-            ]
+                {"from": "human", "value": f"<image>\n{item['question']}"},
+                {"from": "gpt", "value": str(item["answer"])},
+            ],
         }
         llava_data.append(llava_item)
-        
+
     save_json(llava_data, output_path)
+
 
 def run_train(args, config: ExperimentConfig):
     out_checkpoint = Path(args.out_checkpoint) if args.out_checkpoint else Path(config.training.output_dir)
     out_results = Path(args.out_results) if args.out_results else out_checkpoint
-    
+
     out_checkpoint.mkdir(parents=True, exist_ok=True)
     out_results.mkdir(parents=True, exist_ok=True)
-    
-    # 1. Convert dataset
+
     data_path = args.jsonl_dir or config.dataset.data_path
     image_dir = args.image_dir or config.dataset.image_dir
+    train_path, _ = resolve_split_paths(data_path)
     formatted_data_path = out_results / "spacellava_train_data.json"
-    
+
     logger.info(f"Formatting dataset to SpaceLLaVA format: {formatted_data_path}")
-    convert_to_spacellava_format(data_path, str(formatted_data_path))
-    
-    # 2. Generate training script
+    convert_to_spacellava_format(str(train_path), str(formatted_data_path))
+
+    lora_alpha = config.model.lora_alpha if config.model.lora_alpha else 256
     script_path = out_checkpoint / "train_spacellava.sh"
-    
     script_content = f"""#!/bin/bash
 # Auto-generated SpaceLLaVA training script
 
 deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     --lora_enable True \\
     --lora_r {config.model.lora_r} \\
-    --lora_alpha {config.model.lora_alpha} \\
+    --lora_alpha {lora_alpha} \\
     --mm_projector_lr 2e-5 \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
-    --data_path {str(formatted_data_path)} \\
+    --data_path {formatted_data_path} \\
     --image_folder {image_dir} \\
     --vision_tower openai/clip-vit-large-patch14-336 \\
     --mm_projector_type mlp2x_gelu \\
@@ -78,8 +72,8 @@ deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     --mm_use_im_patch_token False \\
     --image_aspect_ratio pad \\
     --group_by_modality_length True \\
-    --bf16 {config.training.bf16} \\
-    --output_dir {str(out_checkpoint)}/saved_model \\
+    --bf16 {str(config.training.bf16).lower()} \\
+    --output_dir {out_checkpoint}/saved_model \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
@@ -97,10 +91,10 @@ deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     --model_max_length 2048 \\
     --gradient_checkpointing True \\
     --dataloader_num_workers 0 \\
-    --lazy_preprocess True 
+    --lazy_preprocess True
 """
-    with open(script_path, "w", encoding="utf-8") as f:
-        f.write(script_content)
-        
+    with open(script_path, "w", encoding="utf-8") as file:
+        file.write(script_content)
+
     logger.info(f"Generated SpaceLLaVA training script: {script_path}")
     logger.info("Execute this script to start SpaceLLaVA training in your environment.")
