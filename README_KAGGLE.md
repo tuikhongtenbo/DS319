@@ -2,6 +2,9 @@
 
 This guide walks you through fine-tuning and running inference for the SpatialMQA repository on Kaggle using Kaggle Notebooks (with P100 or T4x2 GPUs).
 
+### 🛠️ Decoupled Architecture
+This codebase uses a fully decoupled structure where each model has its own dedicated training script in `src/trainers/` and inference script in `src/inference/`. This prevents cross-model dependency errors when running on Kaggle. The main dispatcher (`main.py`) dynamically imports the correct model logic based on your `--config` parameter, meaning your training and inference commands remain unified and unchanged.
+
 ## 🚀 Setting Up on Kaggle
 
 1. **Create a New Notebook** on Kaggle and turn on the **GPU** (T4x2 or P100) under the "Accelerator" settings.

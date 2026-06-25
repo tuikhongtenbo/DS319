@@ -2,6 +2,12 @@
 
 This repository is a clean, production-ready reimplementation of SpatialMQA. It provides a unified pipeline for fine-tuning and inferencing both open-source models (BLIP, BLIP2, InstructBLIP, mPLUG-Owl, IDEFICS, LLaVA, SpaceLLaVA) and API-based models (GPT-4, Qwen).
 
+### 🛠️ Decoupled Architecture (Model-Specific Scripts)
+To prevent cross-compatibility errors (where a certain model depends on specific tokens, input/output structures, or training wrappers), this codebase is **fully decoupled**:
+- **`src/trainers/`**: Houses independent, model-specific training loops (e.g. `train_blip2.py`, `train_idefics.py`). Each script handles its own Dataset format, collator, and training loop.
+- **`src/inference/`**: Houses independent, model-specific inference logic (e.g. `inference_blip2.py`, `inference_llava.py`).
+- **`main.py`**: Acts as a thin dispatcher that parses CLI arguments and dynamically routes the task to the corresponding model-specific script. Giao diện câu lệnh chạy (`main.py`) không thay đổi.
+
 ## 🚀 Getting Started (Local GPU)
 
 ### 1. Installation
