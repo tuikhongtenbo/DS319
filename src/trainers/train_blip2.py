@@ -89,8 +89,15 @@ def compute_blip2_loss(
             attention_mask=attention_mask,
         ).logits
 
+    # Logits seq-len matches input_ids (encoder output), not labels (decoder target).
+    # Only the last |labels| positions correspond to the decoder targets.
+    # Slice logits accordingly so shapes align for cross_entropy.
+    logits_seq = logits.shape[1]
+    label_len = labels.shape[1]
+    logits_sliced = logits[:, -label_len:, :].contiguous()
+
     return criterion(
-        logits.view(-1, logits.shape[-1]).contiguous(),
+        logits_sliced.view(-1, logits_sliced.shape[-1]).contiguous(),
         labels.view(-1).contiguous(),
     )
 
