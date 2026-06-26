@@ -92,7 +92,6 @@ def compute_blip2_loss(
     # Logits seq-len matches input_ids (encoder output), not labels (decoder target).
     # Only the last |labels| positions correspond to the decoder targets.
     # Slice logits accordingly so shapes align for cross_entropy.
-    logits_seq = logits.shape[1]
     label_len = labels.shape[1]
     logits_sliced = logits[:, -label_len:, :].contiguous()
 
@@ -205,7 +204,7 @@ def run_train(args, config: ExperimentConfig):
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.training.learning_rate)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, last_epoch=-1)
-    scaler = torch.cuda.amp.GradScaler(enabled=config.training.bf16)
+    scaler = torch.amp.GradScaler("cuda", enabled=config.training.bf16)
     criterion = nn.CrossEntropyLoss(ignore_index=1)
 
     min_eval_loss = float("inf")
@@ -232,12 +231,7 @@ def run_train(args, config: ExperimentConfig):
             cal_loss += loss
 
             if (idx + 1) % config.training.cal_num == 0 or idx == len(train_dataloader) - 1:
-                divisor = (
-                    config.training.cal_num
-                    if (idx + 1) % config.training.cal_num == 0
-                    else ((idx + 1) % config.training.cal_num)
-                )
-                averaged_loss = cal_loss / divisor
+                averaged_loss = cal_loss / config.training.cal_num
                 optimizer.zero_grad()
                 scaler.scale(averaged_loss).backward()
                 scaler.step(optimizer)
@@ -286,5 +280,9 @@ def run_train(args, config: ExperimentConfig):
             json.dump(dev_loss_history, file, indent=4)
         with open(out_results / "log.json", "w", encoding="utf-8") as file:
             json.dump(log_history, file, indent=4)
+
+    # Save final best metric
+    with open(out_results / "last_dev_metric.json", "w", encoding="utf-8") as file:
+        json.dump({"best_eval_loss": min_eval_loss}, file, indent=4)
 
     logger.info("BLIP-2 training complete.")

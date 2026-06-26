@@ -32,7 +32,6 @@ class Blip2Predictor:
     @torch.no_grad()
     def predict(self, image_path: str, question: str, options: list) -> str:
         image = Image.open(image_path).convert("RGB")
-        # BLIP-2 works best with short prompts; use simple Q/A format
         if options:
             options_str = ", ".join(options)
             prompt = f"Question: {question} Options: {options_str} Answer:"

@@ -9,6 +9,18 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
+from llava.constants import (
+    DEFAULT_IMAGE_TOKEN,
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    IMAGE_PLACEHOLDER,
+    IMAGE_TOKEN_INDEX,
+)
+from llava.conversation import conv_templates
+from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
+from llava.model.builder import load_pretrained_model
+from llava.utils import disable_torch_init
+
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import (
     build_result_record,
@@ -23,23 +35,6 @@ logger = setup_logger(__name__)
 
 
 def run_infer(args, config: ExperimentConfig):
-    try:
-        from llava.constants import (
-            DEFAULT_IMAGE_TOKEN,
-            DEFAULT_IM_END_TOKEN,
-            DEFAULT_IM_START_TOKEN,
-            IMAGE_PLACEHOLDER,
-            IMAGE_TOKEN_INDEX,
-        )
-        from llava.conversation import conv_templates
-        from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
-        from llava.model.builder import load_pretrained_model
-        from llava.utils import disable_torch_init
-    except ImportError as error:
-        logger.error(f"Failed to import SpaceLLaVA libraries: {error}")
-        logger.warning("Skipping SpaceLLaVA inference run.")
-        return
-
     disable_torch_init()
 
     model_path = config.model.model_name_or_path

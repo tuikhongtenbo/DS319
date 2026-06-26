@@ -1,6 +1,0 @@
-model:
-  model_name_or_path: "Salesforce/instructblip-flan-t5-xl"
-  model_type: "instructblip-3b"
-dataset:
-  data_path: "src/datasets/data"
-  image_dir: "data/images/COCO2017"

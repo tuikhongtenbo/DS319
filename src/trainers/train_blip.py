@@ -159,7 +159,7 @@ def run_train(args, config: ExperimentConfig):
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.training.learning_rate)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, last_epoch=-1)
-    scaler = torch.cuda.amp.GradScaler(enabled=config.training.bf16)
+    scaler = torch.amp.GradScaler("cuda", enabled=config.training.bf16)
 
     min_eval_loss = float("inf")
     early_stopping_hook = 0
@@ -195,11 +195,7 @@ def run_train(args, config: ExperimentConfig):
             cal_loss += loss
 
             if (idx + 1) % config.training.cal_num == 0 or idx == len(train_dataloader) - 1:
-                divisor = (
-                    config.training.cal_num
-                    if (idx + 1) % config.training.cal_num == 0
-                    else ((idx + 1) % config.training.cal_num)
-                )
+                divisor = config.training.cal_num
                 averaged_loss = cal_loss / divisor
                 optimizer.zero_grad()
                 scaler.scale(averaged_loss).backward()
@@ -243,11 +239,15 @@ def run_train(args, config: ExperimentConfig):
                 logger.info(f"Early stopping triggered after {epoch + 1} epochs.")
                 break
 
-        with open(out_results / "losses.json", "w", encoding="utf-8") as file:
-            json.dump(losses_history, file, indent=4)
-        with open(out_results / "dev_loss.json", "w", encoding="utf-8") as file:
-            json.dump(dev_loss_history, file, indent=4)
-        with open(out_results / "log.json", "w", encoding="utf-8") as file:
-            json.dump(log_history, file, indent=4)
+        with open(out_results / "losses.json", "w", encoding="utf-8") as f:
+            json.dump(losses_history, f, indent=4)
+        with open(out_results / "dev_loss.json", "w", encoding="utf-8") as f:
+            json.dump(dev_loss_history, f, indent=4)
+        with open(out_results / "log.json", "w", encoding="utf-8") as f:
+            json.dump(log_history, f, indent=4)
+
+    # Save final best metric
+    with open(out_results / "last_dev_metric.json", "w", encoding="utf-8") as f:
+        json.dump({"best_eval_loss": min_eval_loss}, f, indent=4)
 
     logger.info("BLIP-1 training complete.")
