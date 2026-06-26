@@ -9,7 +9,7 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from transformers import BlipForQuestionAnswering, BlipProcessor
+from transformers import BlipForQuestionAnswering, BlipProcessor, BitsAndBytesConfig
 
 from ..configs.config import ExperimentConfig
 from ..datasets.collator import BlipCollator
@@ -105,9 +105,12 @@ def run_train(args, config: ExperimentConfig):
 
     kwargs = {"device_map": config.model.device_map}
     if config.model.load_in_8bit:
-        kwargs["load_in_8bit"] = True
+        kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
     elif config.model.load_in_4bit:
-        kwargs["load_in_4bit"] = True
+        kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+        )
 
     model = BlipForQuestionAnswering.from_pretrained(config.model.model_name_or_path, **kwargs)
 

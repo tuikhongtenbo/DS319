@@ -8,7 +8,7 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 from peft import PeftModel
-from transformers import Blip2ForConditionalGeneration, Blip2Processor
+from transformers import Blip2ForConditionalGeneration, Blip2Processor, BitsAndBytesConfig
 
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import (
@@ -51,9 +51,12 @@ def run_infer(args, config: ExperimentConfig):
 
     kwargs = {"device_map": config.model.device_map}
     if config.model.load_in_8bit:
-        kwargs["load_in_8bit"] = True
+        kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
     elif config.model.load_in_4bit:
-        kwargs["load_in_4bit"] = True
+        kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+        )
 
     model = Blip2ForConditionalGeneration.from_pretrained(
         config.model.model_name_or_path, **kwargs
