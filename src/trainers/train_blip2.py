@@ -285,4 +285,19 @@ def run_train(args, config: ExperimentConfig):
     with open(out_results / "last_dev_metric.json", "w", encoding="utf-8") as file:
         json.dump({"best_eval_loss": min_eval_loss}, file, indent=4)
 
-    logger.info("BLIP-2 training complete.")
+    logger.info("BLIP-2 training complete. Running evaluation on test set...")
+
+    best_model_path = out_checkpoint / "best_model"
+    if best_model_path.exists():
+        from src.inference.inference_blip2 import run_infer as blip2_infer
+
+        class Args:
+            out_checkpoint = str(best_model_path)
+            out_results = str(out_results)
+            jsonl_dir = args.jsonl_dir or config.dataset.data_path
+            image_dir = args.image_dir or config.dataset.image_dir
+            batch_size = args.batch_size or config.training.batch_size
+
+        blip2_infer(Args(), config)
+    else:
+        logger.warning("Best model not found; skipping test evaluation.")

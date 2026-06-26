@@ -95,3 +95,24 @@ deepspeed --include localhost:0 llava/train/train_mem.py \\
     script_path.write_text(script, encoding="utf-8")
     logger.info("Generated LLaVA training script: %s", script_path)
     logger.info("Run this script inside the LLaVA repository environment.")
+
+    best_model_path = out_checkpoint / "best_model"
+    if best_model_path.exists():
+        logger.info("LLaVA training script generated. Found existing best_model; running evaluation on test set...")
+        from src.inference.inference_llava import run_infer as llava_infer
+
+        class Args:
+            out_checkpoint = str(best_model_path)
+            out_results = str(out_results)
+            jsonl_dir = args.jsonl_dir or config.dataset.data_path
+            image_dir = args.image_dir or config.dataset.image_dir
+
+        llava_infer(Args(), config)
+    else:
+        logger.info(
+            "LLaVA training script generated. After training inside LLaVA repo, "
+            "run inference with: python main.py --mode infer --config src/configs/train_llava.yaml "
+            "--out_checkpoint %s --out_results %s",
+            out_checkpoint,
+            out_results,
+        )
