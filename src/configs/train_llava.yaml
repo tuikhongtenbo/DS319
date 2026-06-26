@@ -1,6 +1,10 @@
 model:
   model_name_or_path: "liuhaotian/llava-v1.5-7b"
   model_type: "llava"
+  use_vllm: true                    
+  tensor_parallel_size: 1
+  gpu_memory_utilization: 0.85
+  max_model_len: 4096
   use_lora: true
   lora_r: 128
   lora_alpha: 256
