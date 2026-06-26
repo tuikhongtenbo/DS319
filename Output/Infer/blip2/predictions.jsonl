@@ -1,0 +1,1076 @@
+{"id": 0, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 1, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 2, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 3, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 4, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 5, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 6, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 7, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 8, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 9, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 10, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 11, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 12, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 13, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 14, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 15, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 16, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 17, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 18, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 19, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 20, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 21, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 22, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 23, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 24, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 25, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 26, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 27, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 28, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 29, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 30, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 31, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 32, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 33, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 34, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 35, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 36, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 37, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 38, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 39, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 40, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 41, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 42, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 43, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 44, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 45, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 46, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 47, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 48, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 49, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 50, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 51, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 52, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 53, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 54, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 55, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 56, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 57, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 58, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 59, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 60, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 61, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 62, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 63, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 64, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 65, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 66, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 67, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 68, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 69, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 70, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 71, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 72, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 73, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 74, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 75, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 76, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 77, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 78, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 79, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 80, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 81, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 82, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 83, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 84, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 85, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 86, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 87, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 88, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 89, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 90, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 91, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 92, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 93, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 94, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 95, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 96, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 97, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 98, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 99, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 100, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 101, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 102, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 103, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 104, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 105, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 106, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 107, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 108, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 109, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 110, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 111, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 112, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 113, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 114, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 115, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 116, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 117, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 118, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 119, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 120, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 121, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 122, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 123, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 124, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 125, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 126, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 127, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 128, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 129, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 130, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 131, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 132, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 133, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 134, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 135, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 136, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 137, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 138, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 139, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 140, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 141, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 142, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 143, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 144, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 145, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 146, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 147, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 148, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 149, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 150, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 151, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 152, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 153, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 154, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 155, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 156, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 157, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 158, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 159, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 160, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 161, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 162, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 163, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 164, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 165, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 166, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 167, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 168, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 169, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 170, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 171, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 172, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 173, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 174, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 175, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 176, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 177, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 178, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 179, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 180, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 181, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 182, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 183, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 184, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 185, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 186, "result": 0, "output": "clock tower", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 187, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 188, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 189, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 190, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 191, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 192, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 193, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 194, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 195, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 196, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 197, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 198, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 199, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 200, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 201, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 202, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 203, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 204, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 205, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 206, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 207, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 208, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 209, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 210, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 211, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 212, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 213, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 214, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 215, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 216, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 217, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 218, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 219, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 220, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 221, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 222, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 223, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 224, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 225, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 226, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 227, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 228, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 229, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 230, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 231, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 232, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 233, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 234, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 235, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 236, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 237, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 238, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 239, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 240, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 241, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 242, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 243, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 244, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 245, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 246, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 247, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 248, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 249, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 250, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 251, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 252, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 253, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 254, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 255, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 256, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 257, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 258, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 259, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 260, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 261, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 262, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 263, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 264, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 265, "result": 0, "output": "in front of", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 266, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 267, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 268, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 269, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 270, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 271, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 272, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 273, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 274, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 275, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 276, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 277, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 278, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 279, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 280, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 281, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 282, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 283, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 284, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 285, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 286, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 287, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 288, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 289, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 290, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 291, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 292, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 293, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 294, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 295, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 296, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 297, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 298, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 299, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 300, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 301, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 302, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 303, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 304, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 305, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 306, "result": 0, "output": "on/above", "answer": "behind", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 307, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 308, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 309, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 310, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 311, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 312, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 313, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 314, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 315, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 316, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 317, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 318, "result": 0, "output": "in front of", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 319, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 320, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 321, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 322, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 323, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 324, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 325, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind"]}
+{"id": 326, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 327, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 328, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 329, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 330, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 331, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 332, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 333, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 334, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 335, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 336, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 337, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 338, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 339, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 340, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 341, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 342, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 343, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 344, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 345, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 346, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 347, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 348, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 349, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 350, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 351, "result": 0, "output": "below", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 352, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 353, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 354, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 355, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 356, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 357, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 358, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 359, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 360, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 361, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 362, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 363, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 364, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 365, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 366, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 367, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 368, "result": 0, "output": "on/above", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 369, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 370, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 371, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 372, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 373, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 374, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 375, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 376, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 377, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 378, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 379, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 380, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 381, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 382, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 383, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 384, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 385, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 386, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 387, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 388, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 389, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 390, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 391, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 392, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 393, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 394, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 395, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 396, "result": 0, "output": "from the bottom of the vase", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 397, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 398, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 399, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 400, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 401, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 402, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 403, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 404, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 405, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 406, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 407, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 408, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 409, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 410, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 411, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 412, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 413, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 414, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 415, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 416, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 417, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 418, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 419, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 420, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 421, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 422, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 423, "result": 0, "output": "below", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 424, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 425, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 426, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 427, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 428, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 429, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 430, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 431, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 432, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 433, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 434, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 435, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 436, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 437, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 438, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 439, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 440, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 441, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 442, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 443, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 444, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 445, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 446, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 447, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 448, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 449, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 450, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 451, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 452, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 453, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 454, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 455, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 456, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 457, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 458, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 459, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 460, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 461, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 462, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 463, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 464, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 465, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 466, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 467, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 468, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 469, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 470, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 471, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 472, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 473, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 474, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 475, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 476, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 477, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 478, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 479, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 480, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 481, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 482, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 483, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 484, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 485, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 486, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 487, "result": 0, "output": "in front of", "answer": "behind", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 488, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 489, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 490, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 491, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 492, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 493, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 494, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 495, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 496, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 497, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 498, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 499, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 500, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 501, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 502, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 503, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 504, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 505, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 506, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 507, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 508, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 509, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 510, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 511, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 512, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 513, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 514, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 515, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 516, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 517, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 518, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 519, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 520, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 521, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 522, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 523, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 524, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 525, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 526, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 527, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 528, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 529, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 530, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 531, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 532, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 533, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 534, "result": 0, "output": "in front of", "answer": "behind", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 535, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 536, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 537, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 538, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 539, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 540, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 541, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 542, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 543, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 544, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 545, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 546, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 547, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 548, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 549, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 550, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 551, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 552, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 553, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 554, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 555, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 556, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 557, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 558, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 559, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 560, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 561, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 562, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 563, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 564, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 565, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 566, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 567, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 568, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 569, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 570, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 571, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 572, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 573, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 574, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 575, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 576, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 577, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 578, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 579, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 580, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 581, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 582, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 583, "result": 0, "output": "in front of", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 584, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 585, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 586, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 587, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 588, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 589, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 590, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 591, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 592, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 593, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 594, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 595, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 596, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 597, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 598, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 599, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 600, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 601, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 602, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 603, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 604, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 605, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 606, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 607, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 608, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 609, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 610, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 611, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 612, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 613, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 614, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 615, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 616, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 617, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 618, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 619, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 620, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 621, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 622, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 623, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 624, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 625, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 626, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 627, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 628, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 629, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 630, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 631, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 632, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 633, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 634, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 635, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 636, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 637, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 638, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 639, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 640, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 641, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 642, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 643, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 644, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 645, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 646, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 647, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 648, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 649, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 650, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 651, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind"]}
+{"id": 652, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 653, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 654, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 655, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 656, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 657, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 658, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 659, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 660, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 661, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 662, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 663, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 664, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 665, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 666, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 667, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 668, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 669, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 670, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 671, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 672, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 673, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 674, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 675, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 676, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 677, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 678, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 679, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 680, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 681, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 682, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 683, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 684, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 685, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 686, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 687, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 688, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 689, "result": 0, "output": "below", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 690, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 691, "result": 0, "output": "on/above", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 692, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 693, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 694, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 695, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 696, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 697, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 698, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 699, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 700, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 701, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 702, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 703, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 704, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 705, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 706, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 707, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 708, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 709, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 710, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 711, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 712, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 713, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 714, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 715, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 716, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 717, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 718, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 719, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 720, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 721, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 722, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 723, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 724, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 725, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 726, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 727, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 728, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 729, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 730, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 731, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 732, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 733, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 734, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 735, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 736, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 737, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 738, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 739, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 740, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 741, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 742, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 743, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 744, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 745, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 746, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 747, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 748, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 749, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 750, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 751, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 752, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 753, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 754, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 755, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 756, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 757, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 758, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 759, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 760, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 761, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 762, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 763, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 764, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 765, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 766, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 767, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 768, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 769, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 770, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 771, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 772, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 773, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 774, "result": 0, "output": "in front of", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 775, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 776, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 777, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 778, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 779, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 780, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 781, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 782, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 783, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 784, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 785, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 786, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 787, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 788, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 789, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 790, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 791, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 792, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 793, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 794, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 795, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 796, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 797, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 798, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 799, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 800, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 801, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 802, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 803, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 804, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 805, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 806, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 807, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 808, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 809, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 810, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 811, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 812, "result": 0, "output": "below", "answer": "right of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 813, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 814, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 815, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 816, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 817, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 818, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 819, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 820, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 821, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 822, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 823, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 824, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 825, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 826, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 827, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 828, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 829, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 830, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 831, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 832, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 833, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 834, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 835, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 836, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 837, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 838, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 839, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 840, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 841, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 842, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 843, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 844, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 845, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 846, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 847, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 848, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 849, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 850, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 851, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 852, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 853, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 854, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 855, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 856, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 857, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 858, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 859, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 860, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 861, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 862, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 863, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 864, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 865, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 866, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 867, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 868, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 869, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 870, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 871, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 872, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 873, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 874, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 875, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 876, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 877, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 878, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 879, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 880, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 881, "result": 0, "output": "on/above", "answer": "behind", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 882, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 883, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 884, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 885, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 886, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 887, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 888, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 889, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 890, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 891, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 892, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 893, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 894, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 895, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 896, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 897, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 898, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 899, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 900, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 901, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 902, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 903, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 904, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 905, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 906, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 907, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 908, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 909, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 910, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 911, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 912, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 913, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 914, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 915, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 916, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 917, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 918, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 919, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 920, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 921, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 922, "result": 0, "output": "below", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 923, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 924, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 925, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 926, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 927, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 928, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below"]}
+{"id": 929, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 930, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 931, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 932, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 933, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 934, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 935, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 936, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 937, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 938, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 939, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 940, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 941, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 942, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 943, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 944, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 945, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 946, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 947, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 948, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 949, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 950, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 951, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 952, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 953, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 954, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 955, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 956, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 957, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 958, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 959, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 960, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 961, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 962, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 963, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 964, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 965, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 966, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 967, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 968, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 969, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 970, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 971, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 972, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 973, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 974, "result": 1, "output": "right of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 975, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 976, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 977, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 978, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 979, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 980, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 981, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 982, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 983, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 984, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 985, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 986, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 987, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 988, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 989, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 990, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 991, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 992, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 993, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 994, "result": 0, "output": "below", "answer": "left of", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 995, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 996, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 997, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 998, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 999, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 1000, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1001, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1002, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1003, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1004, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1005, "result": 0, "output": "in front of", "answer": "below", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1006, "result": 1, "output": "below", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1007, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1008, "result": 0, "output": "in front of", "answer": "behind", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1009, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1010, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1011, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1012, "result": 0, "output": "in front of", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1013, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 1014, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1015, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1016, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1017, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1018, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1019, "result": 0, "output": "in front of", "answer": "behind", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1020, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1021, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1022, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1023, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1024, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1025, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1026, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1027, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1028, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1029, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1030, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1031, "result": 0, "output": "on/above", "answer": "behind", "options": ["on/above", "below", "in front of", "behind"]}
+{"id": 1032, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1033, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1034, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1035, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1036, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1037, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1038, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1039, "result": 0, "output": "on/above", "answer": "below", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1040, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1041, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1042, "result": 0, "output": "on/above", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1043, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 1044, "result": 1, "output": "in front of", "answer": "in front of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1045, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1046, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 1047, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 1048, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1049, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1050, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1051, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1052, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "left of", "right of"]}
+{"id": 1053, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1054, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1055, "result": 1, "output": "in front of", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1056, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1057, "result": 1, "output": "on/above", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1058, "result": 0, "output": "behind", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1059, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1060, "result": 0, "output": "in front of", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1061, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1062, "result": 0, "output": "in front of", "answer": "left of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1063, "result": 0, "output": "in front of", "answer": "left of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1064, "result": 0, "output": "in front of", "answer": "on/above", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1065, "result": 0, "output": "on/above", "answer": "right of", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1066, "result": 0, "output": "in front of", "answer": "behind", "options": ["on/above", "below", "in front of", "behind", "left of", "right of"]}
+{"id": 1067, "result": 0, "output": "behind", "answer": "in front of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1068, "result": 0, "output": "left of", "answer": "right of", "options": ["left of", "right of"]}
+{"id": 1069, "result": 1, "output": "behind", "answer": "behind", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1070, "result": 0, "output": "behind", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1071, "result": 1, "output": "left of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 1072, "result": 0, "output": "right of", "answer": "left of", "options": ["left of", "right of"]}
+{"id": 1073, "result": 0, "output": "below", "answer": "on/above", "options": ["on/above", "below"]}
+{"id": 1074, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}
+{"id": 1075, "result": 0, "output": "in front of", "answer": "right of", "options": ["in front of", "behind", "left of", "right of"]}

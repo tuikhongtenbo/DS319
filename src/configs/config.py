@@ -14,6 +14,11 @@ class ModelConfig:
     device_map: str = "auto"
     load_in_8bit: bool = False
     load_in_4bit: bool = False
+    # vLLM inference (faster, uses PagedAttention / TensorParallel)
+    use_vllm: bool = False
+    tensor_parallel_size: int = 1
+    gpu_memory_utilization: float = 0.85
+    max_model_len: int = 4096
     # LoRA config
     use_lora: bool = False
     lora_r: int = 16

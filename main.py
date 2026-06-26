@@ -87,8 +87,27 @@ def run_train(args, config: ExperimentConfig):
 
 def run_infer(args, config: ExperimentConfig):
     model_type = config.model.model_type.lower()
-    logger.info(f"Dispatching inference for model type: {model_type}")
+    use_vllm = config.model.use_vllm
+    logger.info(f"Dispatching inference for model type: {model_type} (vLLM={use_vllm})")
 
+    # ── vLLM-accelerated paths ──────────────────────────────────────────────
+    if use_vllm:
+        if "llava" in model_type or "spacellava" in model_type:
+            from src.inference.inference_vllm_llava import run_infer as llava_vllm_infer
+            llava_vllm_infer(args, config)
+            return
+        elif "qwen" in model_type:
+            from src.inference.inference_vllm_qwen import run_infer as qwen_vllm_infer
+            qwen_vllm_infer(args, config)
+            return
+        else:
+            logger.warning(
+                f"vLLM mode requested for '{model_type}' but no vLLM inference script exists. "
+                f"Falling back to HuggingFace inference."
+            )
+            # fall through to HuggingFace path
+
+    # ── HuggingFace / API paths ──────────────────────────────────────────────
     if "gpt-4" in model_type or model_type == "gpt-4o":
         logger.info(f"Initializing GPT Predictor ({args.shots}-shot)")
         data_path = Path(args.jsonl_dir or config.dataset.data_path)

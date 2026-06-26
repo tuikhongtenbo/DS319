@@ -1,0 +1,6 @@
+# vLLM dependencies — OPTIONAL
+# Install with: pip install -r src/requirements/requirement_vllm.txt
+# Required only when use_vllm: true in config.
+
+# Core vLLM package (version pinned to avoid breaking changes)
+vllm>=0.4.0
