@@ -1,8 +1,9 @@
 """
 Training wrapper for LLaVA (liuhaotian/llava-v1.5-7b).
-Generates the formatting data and bash script required for LLaVA training.
+Generates a bash script compatible with SpatialMQA / LLaVA training format.
 """
 
+import shlex
 from pathlib import Path
 
 from ..configs.config import ExperimentConfig
@@ -50,22 +51,19 @@ def run_train(args, config: ExperimentConfig):
     logger.info(f"Formatting dataset to LLaVA conversational format: {formatted_data_path}")
     convert_to_llava_format(str(train_path), str(formatted_data_path))
 
-    lora_alpha = config.model.lora_alpha if config.model.lora_alpha else 256
     script_path = out_checkpoint / "train_llava.sh"
-    script_content = f"""#!/bin/bash
-# Auto-generated LLaVA training script
-# Run this script inside the LLaVA repository path
+    script = f"""#!/bin/bash
 
 deepspeed --include localhost:0 llava/train/train_mem.py \\
     --lora_enable True \\
     --lora_r {config.model.lora_r} \\
-    --lora_alpha {lora_alpha} \\
+    --lora_alpha {config.model.lora_alpha} \\
     --mm_projector_lr 2e-5 \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
-    --data_path {formatted_data_path} \\
-    --image_folder {image_dir} \\
+    --data_path {shlex.quote(str(formatted_data_path))} \\
+    --image_folder {shlex.quote(str(image_dir))} \\
     --vision_tower openai/clip-vit-large-patch14-336 \\
     --mm_projector_type mlp2x_gelu \\
     --mm_vision_select_layer -2 \\
@@ -74,7 +72,7 @@ deepspeed --include localhost:0 llava/train/train_mem.py \\
     --image_aspect_ratio pad \\
     --group_by_modality_length True \\
     --bf16 {str(config.training.bf16).lower()} \\
-    --output_dir {out_checkpoint}/saved_model \\
+    --output_dir {shlex.quote(str(out_checkpoint / 'saved_model'))} \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
@@ -94,8 +92,6 @@ deepspeed --include localhost:0 llava/train/train_mem.py \\
     --dataloader_num_workers 0 \\
     --lazy_preprocess True
 """
-    with open(script_path, "w", encoding="utf-8") as file:
-        file.write(script_content)
-
-    logger.info(f"Generated LLaVA training script: {script_path}")
-    logger.info("Execute this script to start finetuning in your LLaVA installation environment.")
+    script_path.write_text(script, encoding="utf-8")
+    logger.info("Generated LLaVA training script: %s", script_path)
+    logger.info("Run this script inside the LLaVA repository environment.")

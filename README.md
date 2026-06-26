@@ -176,6 +176,10 @@ Metrics are printed and saved to `{out_results}/metrics.json`.
 
 - BLIP2 training uses manual cross-entropy with `ignore_index=1` and early stopping on dev loss, matching the original repo.
 - LLaVA / SpaceLLaVA finetuning depends on upstream repositories; DS319 generates the required data files and shell scripts.
+- LLaVA / SpaceLLaVA inference uses the exact prompt and conversation templates from SpatialMQA:
+  - LLaVA: `"Image: <image>, Question: ..., Options: ... Output:"` with `llava_v1` / `chatml_direct` template.
+  - SpaceLLaVA: `"Question: ... Options: ... Answer:"` with the same template auto-detection.
+- LoRA weights for inference are loaded from `{out_checkpoint}/best_model` or `{out_checkpoint}/saved_model`, matching the original repo's `model.load_adapter` behavior.
 - If GPU memory is limited, pass `--batch_size 1` or `--batch_size 2` to the ft scripts.
 - Large model downloads (LLaVA, ~10 GB) disable XET automatically in `main.py`. If a download fails mid-way, remove the partial cache entry and retry:
 

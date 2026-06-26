@@ -1,8 +1,9 @@
 """
 Training wrapper for SpaceLLaVA.
-Generates the formatting data and bash script required for SpaceLLaVA training.
+Generates a bash script compatible with SpatialMQA / SpaceLLaVA training format.
 """
 
+import shlex
 from pathlib import Path
 
 from ..configs.config import ExperimentConfig
@@ -20,9 +21,9 @@ def convert_to_spacellava_format(data_path: str, output_path: str) -> None:
     else:
         data = load_json(path)
 
-    llava_data = []
+    spacellava_data = []
     for index, item in enumerate(data):
-        llava_item = {
+        spacellava_item = {
             "id": get_sample_id(item, index),
             "image": item["image"],
             "conversations": [
@@ -30,9 +31,9 @@ def convert_to_spacellava_format(data_path: str, output_path: str) -> None:
                 {"from": "gpt", "value": str(item["answer"])},
             ],
         }
-        llava_data.append(llava_item)
+        spacellava_data.append(spacellava_item)
 
-    save_json(llava_data, output_path)
+    save_json(spacellava_data, output_path)
 
 
 def run_train(args, config: ExperimentConfig):
@@ -47,24 +48,22 @@ def run_train(args, config: ExperimentConfig):
     train_path, _ = resolve_split_paths(data_path)
     formatted_data_path = out_results / "spacellava_train_data.json"
 
-    logger.info(f"Formatting dataset to SpaceLLaVA format: {formatted_data_path}")
+    logger.info(f"Formatting dataset to SpaceLLaVA conversational format: {formatted_data_path}")
     convert_to_spacellava_format(str(train_path), str(formatted_data_path))
 
-    lora_alpha = config.model.lora_alpha if config.model.lora_alpha else 256
     script_path = out_checkpoint / "train_spacellava.sh"
-    script_content = f"""#!/bin/bash
-# Auto-generated SpaceLLaVA training script
+    script = f"""#!/bin/bash
 
 deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     --lora_enable True \\
     --lora_r {config.model.lora_r} \\
-    --lora_alpha {lora_alpha} \\
+    --lora_alpha {config.model.lora_alpha} \\
     --mm_projector_lr 2e-5 \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
-    --data_path {formatted_data_path} \\
-    --image_folder {image_dir} \\
+    --data_path {shlex.quote(str(formatted_data_path))} \\
+    --image_folder {shlex.quote(str(image_dir))} \\
     --vision_tower openai/clip-vit-large-patch14-336 \\
     --mm_projector_type mlp2x_gelu \\
     --mm_vision_select_layer -2 \\
@@ -73,7 +72,7 @@ deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     --image_aspect_ratio pad \\
     --group_by_modality_length True \\
     --bf16 {str(config.training.bf16).lower()} \\
-    --output_dir {out_checkpoint}/saved_model \\
+    --output_dir {shlex.quote(str(out_checkpoint / 'saved_model'))} \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
@@ -93,8 +92,6 @@ deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     --dataloader_num_workers 0 \\
     --lazy_preprocess True
 """
-    with open(script_path, "w", encoding="utf-8") as file:
-        file.write(script_content)
-
-    logger.info(f"Generated SpaceLLaVA training script: {script_path}")
-    logger.info("Execute this script to start SpaceLLaVA training in your environment.")
+    script_path.write_text(script, encoding="utf-8")
+    logger.info("Generated SpaceLLaVA training script: %s", script_path)
+    logger.info("Run this script inside the SpaceLLaVA repository environment.")
