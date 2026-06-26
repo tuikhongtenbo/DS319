@@ -13,7 +13,6 @@ from transformers import Blip2ForConditionalGeneration, Blip2Processor, BitsAndB
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import (
     build_result_record,
-    build_spatial_prompt,
     resolve_test_path,
 )
 from ..metrics.metrics import calculate_spatial_metrics
@@ -33,7 +32,12 @@ class Blip2Predictor:
     @torch.no_grad()
     def predict(self, image_path: str, question: str, options: list) -> str:
         image = Image.open(image_path).convert("RGB")
-        prompt = build_spatial_prompt(question, options)
+        # BLIP-2 works best with short prompts; use simple Q/A format
+        if options:
+            options_str = ", ".join(options)
+            prompt = f"Question: {question} Options: {options_str} Answer:"
+        else:
+            prompt = f"Question: {question} Answer:"
         inputs = self.processor(images=image, text=prompt, return_tensors="pt").to(self.device)
 
         outputs = self.model.generate(**inputs, max_new_tokens=20)
