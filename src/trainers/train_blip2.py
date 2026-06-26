@@ -90,7 +90,7 @@ def compute_blip2_loss(
         ).logits
 
     return criterion(
-        logits.view(-1, logits.shape[-1])[: labels.shape[1], :].contiguous(),
+        logits.view(-1, logits.shape[-1]).contiguous(),
         labels.view(-1).contiguous(),
     )
 

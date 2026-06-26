@@ -35,8 +35,9 @@ logger = setup_logger(__name__)
 
 # Models whose architecture vLLM officially supports for vision-language
 VLLM_SUPPORTED_ARCHS = {
-    "llava",          # any variant with "llava" in the hub name
-    "qwen2_vl",       # handled separately in inference_vllm_qwen.py
+    "llava",        # LLaVA-1.5, LLaVA-1.6, etc.
+    "spacellava",   # SpaceLLaVA (LLaVA-derivative)
+    "qwen2_vl",     # handled separately in inference_vllm_qwen.py
 }
 
 VLLM_MIN_VERSION = "0.4.0"

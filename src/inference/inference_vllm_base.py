@@ -16,7 +16,8 @@ from ..utils.logging import setup_logger
 logger = setup_logger(__name__)
 
 VLLM_SUPPORTED_ARCHS = {
-    "llava",
+    "llava",     # covers llava, LLaVA-1.5/1.6, etc.
+    "spacellava", # SpaceLLaVA (LLaVA-derivative on HuggingFace)
     "qwen2_vl",
 }
 

@@ -66,6 +66,11 @@ def run_infer(args, config: ExperimentConfig):
         config.model.model_name_or_path, **kwargs
     )
 
+    # OPT-based BLIP-2 (blip2-opt-*) needs explicit pad_token for generation
+    if model.config.model_type == "opt":
+        if model.generation_config.pad_token_id is None:
+            model.generation_config.pad_token_id = processor.tokenizer.pad_token_id or 1
+
     if args.out_checkpoint and Path(args.out_checkpoint).exists():
         lora_path = Path(args.out_checkpoint) / "best_model"
         if lora_path.exists():

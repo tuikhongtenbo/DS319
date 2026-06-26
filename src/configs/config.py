@@ -51,6 +51,17 @@ class ExperimentConfig:
     
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "ExperimentConfig":
+        p = Path(yaml_path)
+        if not p.exists():
+            # Try src/configs/ prefix (common in this repo)
+            alt = Path("src/configs") / p.name
+            if alt.exists():
+                yaml_path = str(alt)
+            else:
+                raise FileNotFoundError(
+                    f"Config not found: {yaml_path}\n"
+                    f"Tried: {alt}"
+                )
         with open(yaml_path, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
             

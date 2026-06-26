@@ -60,6 +60,15 @@ def run_infer(args, config: ExperimentConfig):
         config.model.model_name_or_path, **kwargs
     )
 
+    # T5-based InstructBLIP uses eos_token_id as pad; ensure tokenizer is ready
+    if model.config.model_type == "t5":
+        if model.generation_config.pad_token_id is None:
+            model.generation_config.pad_token_id = processor.tokenizer.pad_token_id or 0
+        if model.generation_config.eos_token_id is None:
+            model.generation_config.eos_token_id = processor.tokenizer.eos_token_id
+        if model.generation_config.bos_token_id is None:
+            model.generation_config.bos_token_id = processor.tokenizer.bos_token_id
+
     if args.out_checkpoint and Path(args.out_checkpoint).exists():
         lora_path = Path(args.out_checkpoint) / "best_model"
         if lora_path.exists():
