@@ -32,8 +32,9 @@ einops>=0.6.1
 tqdm>=4.66.1
 PyYAML>=6.0.1
 
-# LLaVA compatible runtime
+# SpaceLLaVA runtime (required)
+# SpaceLLaVA is built on LLaVA architecture and requires the llava package.
+# If you hit "ModuleNotFoundError: No module named 'torch'" while installing llava,
+# install torch first and re-run with:
+#     pip install --no-build-isolation llava>=1.2.2.post1
 llava>=1.2.2.post1
-
-# vLLM (optional, for fast inference)
-vllm>=0.4.0

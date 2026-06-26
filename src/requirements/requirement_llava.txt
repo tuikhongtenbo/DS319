@@ -1,5 +1,5 @@
 # IMPORTANT: Install torch FIRST with your CUDA version.
-# For RTX 5080 (Blackwell, SM 12.0) or CUDA >= 12.6:
+# For RTX 5080 / Blackwell / CUDA 12.8:
 #   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 #
 # For CUDA 12.1:
@@ -39,6 +39,3 @@ PyYAML>=6.0.1
 #       installing llava, install torch first and re-run with:
 #           pip install --no-build-isolation llava>=1.2.2.post1
 llava>=1.2.2.post1
-
-# vLLM (optional, for fast inference)
-vllm>=0.4.0

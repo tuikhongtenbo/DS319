@@ -50,9 +50,13 @@ pip install -r src/requirements/requirement_blip.txt
 
 ```bash
 # Install torch FIRST (choose your CUDA version)
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# For RTX 5080 / Blackwell / CUDA 12.8:
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 
-# Then install LLaVA requirements
+# For CUDA 12.1:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Then install requirements
 pip install -r src/requirements/requirement_llava.txt
 ```
 
@@ -135,13 +139,13 @@ bash scripts/blip2_infer.sh --out_results ./outputs/blip2_results
 # LLaVA (HuggingFace)
 bash scripts/llava_infer.sh --out_results ./outputs/llava_results
 
-# LLaVA (vLLM — fast)
+# LLaVA (vLLM — fast, does not require the `llava` package)
 bash scripts/llava_infer_vllm.sh --out_results ./outputs/llava_results
 
 # SpaceLLaVA (HuggingFace)
 bash scripts/spacellava_infer.sh --out_results ./outputs/spacellava_results
 
-# SpaceLLaVA (vLLM — fast)
+# SpaceLLaVA (vLLM — fast, does not require the `llava` package)
 bash scripts/spacellava_infer_vllm.sh --out_results ./outputs/spacellava_results
 
 # GPT-4o 0-shot
@@ -193,4 +197,19 @@ Metrics are printed and saved to `{out_results}/metrics.json`.
 rm -rf ~/.cache/huggingface/hub/models--liuhaotian--llava-v1.5-7b
 bash scripts/download_hf_model.sh liuhaotian/llava-v1.5-7b
 df -h /workspace   # ensure >15 GB free
+```
+
+- **vLLM / CUDA / TorchAudio compatibility:** vLLM on PyTorch + CUDA 12.8 is sensitive to binary mismatches. If you see `RuntimeError: Detected that PyTorch and TorchAudio were compiled with different CUDA versions`, reinstall the matching stack:
+
+```bash
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip install --force-reinstall --no-cache-dir vllm
+```
+
+- If `vllm` still fails with an `undefined symbol` error from `_C.abi3.so`, purge pip cache and reinstall:
+
+```bash
+pip cache purge
+pip uninstall -y vllm
+pip install vllm
 ```
