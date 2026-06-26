@@ -6,18 +6,16 @@ Clean reimplementation of [SpatialMQA](https://github.com/liuziyan/SpatialMQA) a
 
 | Task | Model | Setting |
 |------|-------|---------|
-| Inference | BLIP2-opt-2.7B | Zero-shot / LoRA |
-| Inference | InstructBLIP-3B | Zero-shot |
-| Inference | mPLUG-Owl-7B | Zero-shot / LoRA |
-| Inference | LLaVA1.5-7B | Zero-shot / LoRA |
+| Finetune | BLIP-vqa-base | Full |
+| Finetune | BLIP2-opt-2.7B | LoRA |
+| Finetune | LLaVA-1.5-7B | LoRA (external script) |
+| Finetune | SpaceLLaVA | LoRA (external script) |
+| Inference | BLIP-vqa-base | Zero-shot |
+| Inference | BLIP2-opt-2.7B | Zero-shot |
+| Inference | LLaVA-1.5-7B | Zero-shot / LoRA |
 | Inference | SpaceLLaVA | Zero-shot / LoRA |
 | Inference | GPT-4o | 0-shot / 1-shot |
-| Finetune | BLIP-vqa-base | Full |
-| Finetune | BLIP2-opt-2.7B | LoRA (in-repo) |
-| Finetune | LLaVA1.5-7B | LoRA (external script) |
-| Finetune | SpaceLLaVA | LoRA (external script) |
-
-Deprecated but still available: IDEFICS, InstructBLIP finetune, Qwen.
+| Inference | Qwen-VL | 0-shot / 1-shot |
 
 ## Architecture
 
@@ -27,6 +25,7 @@ Deprecated but still available: IDEFICS, InstructBLIP finetune, Qwen.
 - `src/datasets/collator.py` — batch padding for BLIP-family trainers
 - `src/metrics/metrics.py` — macro P/R/F1/Acc aligned with original eval
 - `main.py` — CLI dispatcher for train / infer / eval
+- `scripts/*.sh` — ready-to-run shortcuts for every model and task
 
 ## Getting Started
 
@@ -45,8 +44,6 @@ For LLaVA / SpaceLLaVA, install from the upstream repo (do **not** rely on `pip 
 ```bash
 bash scripts/setup_llava.sh /workspace/LLaVA
 ```
-
-For mPLUG-Owl, clone [X-PLUG/mPLUG-Owl](https://github.com/X-PLUG/mPLUG-Owl) and add its `mPLUG-Owl/` directory to `PYTHONPATH`.
 
 ### 2. Dataset Preparation
 
@@ -75,91 +72,74 @@ data/images/COCO2017/
 
 ### 3. Fine-Tuning
 
-**BLIP2 LoRA (in-repo):**
+Run fine-tuning for each model with a single command:
 
 ```bash
-python main.py \
-    --mode train \
-    --config src/configs/train_blip2.yaml \
-    --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data \
-    --out_checkpoint ./outputs/blip2_checkpoints \
-    --out_results ./outputs/blip2_logs \
-    --batch_size 8
+# BLIP (full fine-tune)
+bash scripts/blip_ft.sh --out_checkpoint ./outputs/blip_checkpoints --out_results ./outputs/blip_logs
+
+# BLIP-2 (LoRA)
+bash scripts/blip2_ft.sh --out_checkpoint ./outputs/blip2_checkpoints --out_results ./outputs/blip2_logs
+
+# LLaVA (LoRA — generates external script, run inside LLaVA repo)
+bash scripts/llava_ft.sh --out_checkpoint ./outputs/llava_checkpoints --out_results ./outputs/llava_logs
+# then: bash outputs/llava_checkpoints/train_llava.sh  (inside LLaVA repo)
+
+# SpaceLLaVA (LoRA — generates external script, run inside SpaceLLaVA repo)
+bash scripts/spacellava_ft.sh --out_checkpoint ./outputs/spacellava_checkpoints --out_results ./outputs/spacellava_logs
+# then: bash outputs/spacellava_checkpoints/train_spacellava.sh  (inside SpaceLLaVA repo)
 ```
 
-- Best checkpoint: `--out_checkpoint/best_model` (selected by lowest dev loss)
-- Logs: `losses.json`, `dev_loss.json`, `log.json` under `--out_results`
-
-**BLIP full fine-tune:**
-
-```bash
-python main.py \
-    --mode train \
-    --config src/configs/train_blip.yaml \
-    --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data \
-    --out_checkpoint ./outputs/blip_checkpoints \
-    --out_results ./outputs/blip_logs
-```
-
-**LLaVA / SpaceLLaVA (external DeepSpeed):**
-
-```bash
-python main.py \
-    --mode train \
-    --config src/configs/train_llava.yaml \
-    --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data \
-    --out_checkpoint ./outputs/llava_checkpoints \
-    --out_results ./outputs/llava_logs
-```
-
-Then run the generated script inside your LLaVA checkout:
-
-```bash
-bash outputs/llava_checkpoints/train_llava.sh
-```
+**Logs saved under `--out_results`:**
+- `losses.json` — training loss per step
+- `dev_loss.json` — eval loss per epoch
+- `log.json` — train loss + eval loss + lr per epoch
+- `last_dev_metric.json` — best eval loss at end of training
 
 ### 4. Inference
 
-**Open-source model:**
+Run inference for each model with a single command:
 
 ```bash
-python main.py \
-    --mode infer \
-    --config src/configs/train_blip2.yaml \
-    --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data \
-    --out_checkpoint ./outputs/blip2_checkpoints \
-    --out_results ./outputs/blip2_results
+# BLIP
+bash scripts/blip_infer.sh --out_results ./outputs/blip_results
+
+# BLIP-2
+bash scripts/blip2_infer.sh --out_results ./outputs/blip2_results
+
+# LLaVA (HuggingFace)
+bash scripts/llava_infer.sh --out_results ./outputs/llava_results
+
+# LLaVA (vLLM — fast)
+bash scripts/llava_infer_vllm.sh --out_results ./outputs/llava_results
+
+# SpaceLLaVA (HuggingFace)
+bash scripts/spacellava_infer.sh --out_results ./outputs/spacellava_results
+
+# SpaceLLaVA (vLLM — fast)
+bash scripts/spacellava_infer_vllm.sh --out_results ./outputs/spacellava_results
+
+# GPT-4o 0-shot
+bash scripts/gpt_infer_0_shot.sh --api_key YOUR_OPENAI_API_KEY --out_results ./outputs/gpt_0shot
+
+# GPT-4o 1-shot
+bash scripts/gpt_infer_1_shot.sh --api_key YOUR_OPENAI_API_KEY --out_results ./outputs/gpt_1shot
+
+# Qwen-VL 0-shot (DashScope API)
+bash scripts/qwen_infer_0_shot.sh --api_key YOUR_DASHSCOPE_API_KEY --out_results ./outputs/qwen_0shot
+
+# Qwen-VL 1-shot (DashScope API)
+bash scripts/qwen_infer_1_shot.sh --api_key YOUR_DASHSCOPE_API_KEY --out_results ./outputs/qwen_1shot
 ```
 
-**GPT-4o zero-shot:**
+**All inference scripts** accept these common arguments:
 
-```bash
-python main.py \
-    --mode infer \
-    --config src/configs/train_gpt.yaml \
-    --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data \
-    --out_results ./outputs/gpt4o_results \
-    --api_key YOUR_API_KEY \
-    --shots 0
-```
-
-**GPT-4o one-shot:**
-
-```bash
-python main.py \
-    --mode infer \
-    --config src/configs/train_gpt.yaml \
-    --image_dir ./data/images/COCO2017 \
-    --jsonl_dir ./src/datasets/data \
-    --out_results ./outputs/gpt4o_results \
-    --api_key YOUR_API_KEY \
-    --shots 1
-```
+| Argument | Description |
+|----------|-------------|
+| `--jsonl_dir` | Path to dataset directory (default: `src/datasets/data`) |
+| `--image_dir` | Path to image directory (default: `data/images/COCO2017`) |
+| `--out_results` | Output directory for predictions |
+| `--shots` | Number of shots (0 or 1) — auto-set by script for GPT/Qwen |
 
 Predictions are saved to `{out_results}/predictions.jsonl`.
 
@@ -176,9 +156,9 @@ Metrics are printed and saved to `{out_results}/metrics.json`.
 ## Notes
 
 - BLIP2 training uses manual cross-entropy with `ignore_index=1` and early stopping on dev loss, matching the original repo.
-- LLaVA / SpaceLLaVA / mPLUG-Owl finetuning still depends on upstream repositories; DS319 generates the required data files and shell scripts.
-- If GPU memory is limited, reduce `--batch_size` to `1` or `2`.
-- Large model downloads (LLaVA, mPLUG-Owl, ~10 GB) disable XET automatically in `main.py`. If a download fails mid-way, remove the partial cache entry and retry:
+- LLaVA / SpaceLLaVA finetuning depends on upstream repositories; DS319 generates the required data files and shell scripts.
+- If GPU memory is limited, pass `--batch_size 1` or `--batch_size 2` to the ft scripts.
+- Large model downloads (LLaVA, ~10 GB) disable XET automatically in `main.py`. If a download fails mid-way, remove the partial cache entry and retry:
 
 ```bash
 rm -rf ~/.cache/huggingface/hub/models--liuhaotian--llava-v1.5-7b
