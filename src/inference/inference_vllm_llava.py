@@ -14,9 +14,6 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
-from llava.constants import DEFAULT_IMAGE_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN, IMAGE_PLACEHOLDER
-from llava.conversation import conv_templates
-
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import build_result_record, build_spatial_prompt, resolve_test_path
 from ..metrics.metrics import calculate_spatial_metrics
@@ -26,18 +23,21 @@ from .inference_vllm_base import check_vllm_available, build_sampling_params
 
 logger = setup_logger(__name__)
 
+IMAGE_PLACEHOLDER = "<image>"
+
 
 def _conv_prompt(question: str, options: List[str], conv_mode: str) -> str:
     prompt_text = build_spatial_prompt(question, options)
-    image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+
+    # Minimal prompt formatting that does not require the `llava` package.
+    # vLLM will apply the model's chat template during generation, so we only
+    # need to ensure the image placeholder is present.
+    image_token = "<image>"
     if IMAGE_PLACEHOLDER in prompt_text:
-        prompt_text = re.sub(IMAGE_PLACEHOLDER, image_token_se, prompt_text)
+        prompt_text = re.sub(IMAGE_PLACEHOLDER, image_token, prompt_text)
     else:
-        prompt_text = image_token_se + "\n" + prompt_text
-    conv = conv_templates[conv_mode].copy()
-    conv.append_message(conv.roles[0], prompt_text)
-    conv.append_message(conv.roles[1], None)
-    return conv.get_prompt()
+        prompt_text = image_token + "\n" + prompt_text
+    return prompt_text
 
 
 def _detect_conv_mode(model_name_or_path: str) -> str:

@@ -50,10 +50,16 @@ pip install -r src/requirements/requirement_blip.txt
 
 ```bash
 # Install torch FIRST (choose your CUDA version)
-pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
 # Then install LLaVA requirements
 pip install -r src/requirements/requirement_llava.txt
+```
+
+**Troubleshooting:** if installing `llava` fails with `ModuleNotFoundError: No module named 'torch'`, use:
+
+```bash
+pip install --no-build-isolation llava
 ```
 
 For LLaVA / SpaceLLaVA fine-tuning, also clone the upstream repo:

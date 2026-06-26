@@ -1,7 +1,15 @@
-# Core Dependencies (install first)
-torch>=2.2.0
-torchvision>=0.17.0
-numpy>=1.26.4
+# IMPORTANT: Install torch FIRST with your CUDA version.
+# For RTX 5080 (Blackwell, SM 12.0) or CUDA >= 12.6:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+#
+# For CUDA 12.1:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#
+# For CUDA 11.8:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+#
+# Then install the rest:
+#   pip install -r src/requirements/requirement_llava.txt
 
 # Transformers & Model Loading
 transformers>=4.37.2
@@ -13,25 +21,24 @@ safetensors>=0.4.2
 timm>=0.6.13
 Pillow>=10.2.0
 
-# Training & Fine-tuning (install after torch)
+# Training & Fine-tuning
 accelerate>=0.21.0
 peft>=0.9.0
 bitsandbytes>=0.43.0
 deepspeed>=0.14.2
 
-# Attention Optimization (install after torch)
-flash-attn>=2.5.8
-triton>=2.1.0
-
-# LLaVA runtime
-llava>=1.2.2.post1
-
 # Utilities
 huggingface-hub>=0.21.4
 einops>=0.6.1
-einops-exts>=0.0.4
 tqdm>=4.66.2
 PyYAML>=6.0.1
 
-# Quantization (for smaller model deployment)
-packaging>=24.0
+# LLaVA runtime
+# NOTE: pip builds llava in isolation and torch may be missing there.
+#       If you hit "ModuleNotFoundError: No module named 'torch'" while
+#       installing llava, install torch first and re-run with:
+#           pip install --no-build-isolation llava>=1.2.2.post1
+llava>=1.2.2.post1
+
+# vLLM (optional, for fast inference)
+vllm>=0.4.0
