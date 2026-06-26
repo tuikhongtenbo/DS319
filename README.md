@@ -36,14 +36,33 @@ git clone https://github.com/tuikhongtenbo/DS319.git
 cd DS319
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
 ```
 
-For LLaVA / SpaceLLaVA, install from the upstream repo (do **not** rely on `pip install llava` alone — it pins `torch==2.1.2`, which is unavailable on Python 3.12+):
+Then install dependencies based on your task:
+
+**For training BLIP / BLIP-2:**
+
+```bash
+pip install -r src/requirements/requirement_blip.txt
+```
+
+**For training or inference with LLaVA / SpaceLLaVA:**
+
+```bash
+# Install torch FIRST (choose your CUDA version)
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# Then install LLaVA requirements
+pip install -r src/requirements/requirement_llava.txt
+```
+
+For LLaVA / SpaceLLaVA fine-tuning, also clone the upstream repo:
 
 ```bash
 bash scripts/setup_llava.sh /workspace/LLaVA
 ```
+
+For mPLUG-Owl, clone [X-PLUG/mPLUG-Owl](https://github.com/X-PLUG/mPLUG-Owl) and add its `mPLUG-Owl/` directory to `PYTHONPATH`.
 
 ### 2. Dataset Preparation
 
