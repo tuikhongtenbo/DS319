@@ -1,5 +1,6 @@
 # Core Dependencies
-torch>=2.1.0
+torch>=2.2.0
+torchvision>=0.17.0
 
 # Transformers & Model Loading
 transformers>=4.37.2
