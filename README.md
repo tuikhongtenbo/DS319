@@ -4,18 +4,18 @@ Clean reimplementation of [SpatialMQA](https://github.com/liuziyan/SpatialMQA) a
 
 ## Supported Models
 
-| Task | Model | Setting |
-|------|-------|---------|
-| Finetune | BLIP-vqa-base | Full |
-| Finetune | BLIP2-opt-2.7B | LoRA |
-| Finetune | LLaVA-1.5-7B | LoRA (external script) |
-| Finetune | SpaceLLaVA | LoRA (external script) |
-| Inference | BLIP-vqa-base | Zero-shot |
-| Inference | BLIP2-opt-2.7B | Zero-shot |
-| Inference | LLaVA-1.5-7B | Zero-shot / LoRA |
-| Inference | SpaceLLaVA | Zero-shot / LoRA |
-| Inference | GPT-4o | 0-shot / 1-shot |
-| Inference | Qwen-VL | 0-shot / 1-shot |
+| Task      | Model          | Setting                |
+| --------- | -------------- | ---------------------- |
+| Finetune  | BLIP-vqa-base  | Full                   |
+| Finetune  | BLIP2-opt-2.7B | LoRA                   |
+| Finetune  | LLaVA-1.5-7B   | LoRA (external script) |
+| Finetune  | SpaceLLaVA     | LoRA (external script) |
+| Inference | BLIP-vqa-base  | Zero-shot              |
+| Inference | BLIP2-opt-2.7B | Zero-shot              |
+| Inference | LLaVA-1.5-7B   | Zero-shot / LoRA       |
+| Inference | SpaceLLaVA     | Zero-shot / LoRA       |
+| Inference | GPT-4o         | 0-shot / 1-shot        |
+| Inference | Qwen-VL        | 0-shot / 1-shot        |
 
 ## Architecture
 
@@ -36,43 +36,14 @@ git clone https://github.com/tuikhongtenbo/DS319.git
 cd DS319
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Then install dependencies based on your task:
-
-**For training BLIP / BLIP-2:**
-
-```bash
-pip install -r src/requirements/requirement_blip.txt
-```
-
-**For training or inference with LLaVA / SpaceLLaVA:**
-
-```bash
-# Install torch FIRST (choose your CUDA version)
-# For RTX 5080 / Blackwell / CUDA 12.8:
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-
-# For CUDA 12.1:
-# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-
-# Then install requirements
-pip install -r src/requirements/requirement_llava.txt
-```
-
-**Troubleshooting:** if installing `llava` fails with `ModuleNotFoundError: No module named 'torch'`, use:
-
-```bash
-pip install --no-build-isolation llava
-```
-
-For LLaVA / SpaceLLaVA fine-tuning, also clone the upstream repo:
+For LLaVA / SpaceLLaVA, install from the upstream repo (do **not** rely on `pip install llava` alone — it pins `torch==2.1.2`, which is unavailable on Python 3.12+):
 
 ```bash
 bash scripts/setup_llava.sh /workspace/LLaVA
 ```
-
-For mPLUG-Owl, clone [X-PLUG/mPLUG-Owl](https://github.com/X-PLUG/mPLUG-Owl) and add its `mPLUG-Owl/` directory to `PYTHONPATH`.
 
 ### 2. Dataset Preparation
 
@@ -120,6 +91,7 @@ bash scripts/spacellava_ft.sh --out_checkpoint ./outputs/spacellava_checkpoints 
 ```
 
 **Logs saved under `--out_results`:**
+
 - `losses.json` — training loss per step
 - `dev_loss.json` — eval loss per epoch
 - `log.json` — train loss + eval loss + lr per epoch
@@ -139,13 +111,13 @@ bash scripts/blip2_infer.sh --out_results ./outputs/blip2_results
 # LLaVA (HuggingFace)
 bash scripts/llava_infer.sh --out_results ./outputs/llava_results
 
-# LLaVA (vLLM — fast, does not require the `llava` package)
+# LLaVA (vLLM — fast)
 bash scripts/llava_infer_vllm.sh --out_results ./outputs/llava_results
 
 # SpaceLLaVA (HuggingFace)
 bash scripts/spacellava_infer.sh --out_results ./outputs/spacellava_results
 
-# SpaceLLaVA (vLLM — fast, does not require the `llava` package)
+# SpaceLLaVA (vLLM — fast)
 bash scripts/spacellava_infer_vllm.sh --out_results ./outputs/spacellava_results
 
 # GPT-4o 0-shot
@@ -163,12 +135,12 @@ bash scripts/qwen_infer_1_shot.sh --api_key YOUR_DASHSCOPE_API_KEY --out_results
 
 **All inference scripts** accept these common arguments:
 
-| Argument | Description |
-|----------|-------------|
-| `--jsonl_dir` | Path to dataset directory (default: `src/datasets/data`) |
-| `--image_dir` | Path to image directory (default: `data/images/COCO2017`) |
-| `--out_results` | Output directory for predictions |
-| `--shots` | Number of shots (0 or 1) — auto-set by script for GPT/Qwen |
+| Argument          | Description                                                 |
+| ----------------- | ----------------------------------------------------------- |
+| `--jsonl_dir`   | Path to dataset directory (default:`src/datasets/data`)   |
+| `--image_dir`   | Path to image directory (default:`data/images/COCO2017`)  |
+| `--out_results` | Output directory for predictions                            |
+| `--shots`       | Number of shots (0 or 1) — auto-set by script for GPT/Qwen |
 
 Predictions are saved to `{out_results}/predictions.jsonl`.
 
@@ -186,10 +158,6 @@ Metrics are printed and saved to `{out_results}/metrics.json`.
 
 - BLIP2 training uses manual cross-entropy with `ignore_index=1` and early stopping on dev loss, matching the original repo.
 - LLaVA / SpaceLLaVA finetuning depends on upstream repositories; DS319 generates the required data files and shell scripts.
-- LLaVA / SpaceLLaVA inference uses the exact prompt and conversation templates from SpatialMQA:
-  - LLaVA: `"Image: <image>, Question: ..., Options: ... Output:"` with `llava_v1` / `chatml_direct` template.
-  - SpaceLLaVA: `"Question: ... Options: ... Answer:"` with the same template auto-detection.
-- LoRA weights for inference are loaded from `{out_checkpoint}/best_model` or `{out_checkpoint}/saved_model`, matching the original repo's `model.load_adapter` behavior.
 - If GPU memory is limited, pass `--batch_size 1` or `--batch_size 2` to the ft scripts.
 - Large model downloads (LLaVA, ~10 GB) disable XET automatically in `main.py`. If a download fails mid-way, remove the partial cache entry and retry:
 
@@ -197,19 +165,4 @@ Metrics are printed and saved to `{out_results}/metrics.json`.
 rm -rf ~/.cache/huggingface/hub/models--liuhaotian--llava-v1.5-7b
 bash scripts/download_hf_model.sh liuhaotian/llava-v1.5-7b
 df -h /workspace   # ensure >15 GB free
-```
-
-- **vLLM / CUDA / TorchAudio compatibility:** vLLM on PyTorch + CUDA 12.8 is sensitive to binary mismatches. If you see `RuntimeError: Detected that PyTorch and TorchAudio were compiled with different CUDA versions`, reinstall the matching stack:
-
-```bash
-pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
-pip install --force-reinstall --no-cache-dir vllm
-```
-
-- If `vllm` still fails with an `undefined symbol` error from `_C.abi3.so`, purge pip cache and reinstall:
-
-```bash
-pip cache purge
-pip uninstall -y vllm
-pip install vllm
 ```

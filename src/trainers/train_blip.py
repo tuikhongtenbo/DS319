@@ -1,5 +1,6 @@
 """
 Training script specialized for BLIP-1 (Salesforce/blip-vqa-base).
+Selects best model based on dev accuracy, not loss.
 """
 
 import json
@@ -13,8 +14,15 @@ from transformers import BlipForQuestionAnswering, BlipProcessor, BitsAndBytesCo
 
 from ..configs.config import ExperimentConfig
 from ..datasets.collator import BlipCollator
-from ..datasets.preprocessing import resolve_split_paths
-from ..utils.io import load_json, load_jsonl
+from ..datasets.preprocessing import (
+    build_result_record,
+    decode_blip_output,
+    normalize_blip_answer,
+    resolve_split_paths,
+    resolve_test_path,
+)
+from ..metrics.metrics import calculate_spatial_metrics
+from ..utils.io import load_json, load_jsonl, save_jsonl
 from ..utils.logging import setup_logger
 from ..utils.seed import set_seed
 
@@ -91,6 +99,39 @@ def compute_eval_loss(model, dataloader, device, bf16: bool = True) -> float:
     return eval_loss / len(dataloader)
 
 
+def compute_dev_accuracy(
+    model,
+    valid_dataset,
+    processor,
+    device,
+    bf16: bool = True,
+    batch_size: int = 8,
+) -> float:
+    """Compute accuracy on dev set for model selection."""
+    model.eval()
+    predictions = []
+    gt_answers = []
+
+    with torch.no_grad():
+        for idx in tqdm(range(len(valid_dataset)), desc="[Dev Accuracy]"):
+            item = valid_dataset[idx]
+            question = item["question"]
+            gt_answer = str(item["answer"])
+            image_path = valid_dataset.image_dir / item["image"]
+            image = Image.open(image_path).convert("RGB")
+
+            inputs = processor(images=image, text=question, return_tensors="pt").to(device)
+            outputs = model.generate(**inputs, max_new_tokens=20)
+            decoded = decode_blip_output(processor, outputs[0], question)
+            pred_answer = normalize_blip_answer(decoded)
+
+            predictions.append(build_result_record(item, idx, pred_answer))
+            gt_answers.append(gt_answer)
+
+    metrics = calculate_spatial_metrics(predictions)
+    return metrics["accuracy"]
+
+
 def run_train(args, config: ExperimentConfig):
     set_seed(config.training.seed)
 
@@ -162,9 +203,11 @@ def run_train(args, config: ExperimentConfig):
     scaler = torch.amp.GradScaler("cuda", enabled=config.training.bf16)
 
     min_eval_loss = float("inf")
+    best_dev_accuracy = 0.0
     early_stopping_hook = 0
     losses_history = []
     dev_loss_history = []
+    dev_accuracy_history = []
     log_history = []
     global_step = 0
 
@@ -212,27 +255,35 @@ def run_train(args, config: ExperimentConfig):
         )
         dev_loss_history.append({"epoch": epoch + 1, "eval_loss": eval_loss})
 
+        dev_accuracy = compute_dev_accuracy(
+            model, valid_dataset, processor, device,
+            bf16=config.training.bf16, batch_size=batch_size
+        )
+        dev_accuracy_history.append({"epoch": epoch + 1, "dev_accuracy": dev_accuracy})
+
         log_item = {
             "epoch": epoch + 1,
             "train_loss": epoch_loss / len(train_dataloader),
             "eval_loss": eval_loss,
+            "dev_accuracy": dev_accuracy,
             "lr": optimizer.param_groups[0]["lr"],
         }
         log_history.append(log_item)
 
         logger.info(
             f"Epoch {epoch + 1} | Train Loss: {log_item['train_loss']:.4f} | "
-            f"Eval Loss: {eval_loss:.4f} | LR: {log_item['lr']}"
+            f"Eval Loss: {eval_loss:.4f} | Dev Acc: {dev_accuracy:.4f} | LR: {log_item['lr']}"
         )
         scheduler.step()
 
-        if eval_loss < min_eval_loss:
-            min_eval_loss = eval_loss
+        # Select best model based on dev accuracy, not loss
+        if dev_accuracy > best_dev_accuracy:
+            best_dev_accuracy = dev_accuracy
             early_stopping_hook = 0
             save_path = out_checkpoint / "best_model"
             model.save_pretrained(save_path)
             processor.save_pretrained(save_path)
-            logger.info(f"Saved best model with eval loss {eval_loss:.4f} to {save_path}")
+            logger.info(f"Saved best model with dev accuracy {dev_accuracy:.4f} to {save_path}")
         else:
             early_stopping_hook += 1
             if early_stopping_hook > config.training.patience:
@@ -243,18 +294,20 @@ def run_train(args, config: ExperimentConfig):
             json.dump(losses_history, f, indent=4)
         with open(out_results / "dev_loss.json", "w", encoding="utf-8") as f:
             json.dump(dev_loss_history, f, indent=4)
+        with open(out_results / "dev_accuracy.json", "w", encoding="utf-8") as f:
+            json.dump(dev_accuracy_history, f, indent=4)
         with open(out_results / "log.json", "w", encoding="utf-8") as f:
             json.dump(log_history, f, indent=4)
 
     # Save final best metric
-    with open(out_results / "last_dev_metric.json", "w", encoding="utf-8") as f:
-        json.dump({"best_eval_loss": min_eval_loss}, f, indent=4)
+    with open(out_results / "best_dev_metric.json", "w", encoding="utf-8") as f:
+        json.dump({"best_dev_accuracy": best_dev_accuracy, "best_dev_loss": min_eval_loss}, f, indent=4)
 
-    logger.info("BLIP-1 training complete. Running evaluation on test set...")
+    logger.info("BLIP-1 training complete. Loading best model for evaluation on test set...")
 
     best_model_path = out_checkpoint / "best_model"
     if best_model_path.exists():
-        from src.inference.inference_blip import run_infer as blip_infer
+        from ..inference.inference_blip import run_infer as blip_infer
 
         class Args:
             out_checkpoint = str(best_model_path)

@@ -96,10 +96,11 @@ deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     logger.info("Generated SpaceLLaVA training script: %s", script_path)
     logger.info("Run this script inside the SpaceLLaVA repository environment.")
 
+    # After training, load best model and evaluate on test set
     best_model_path = out_checkpoint / "best_model"
     if best_model_path.exists():
-        logger.info("SpaceLLaVA training script generated. Found existing best_model; running evaluation on test set...")
-        from src.inference.inference_spacellava import run_infer as spacellava_infer
+        logger.info("Found existing best_model; loading for evaluation on test set...")
+        from ..inference.inference_spacellava import run_infer as spacellava_infer
 
         class Args:
             out_checkpoint = str(best_model_path)
@@ -111,8 +112,10 @@ deepspeed --include localhost:0 spacellava/train/train_mem.py \\
     else:
         logger.info(
             "SpaceLLaVA training script generated. After training inside SpaceLLaVA repo, "
-            "run inference with: python main.py --mode infer --config src/configs/train_spacellava.yaml "
+            "copy the best checkpoint to '%s/best_model' and run inference with: "
+            "python main.py --mode infer --config src/configs/train_spacellava.yaml "
             "--out_checkpoint %s --out_results %s",
+            out_checkpoint,
             out_checkpoint,
             out_results,
         )

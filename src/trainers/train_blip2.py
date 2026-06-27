@@ -1,5 +1,6 @@
 """
 Training script specialized for BLIP-2 (Salesforce/blip2-opt-2.7b).
+Selects best model based on dev accuracy, not loss.
 """
 
 import json
@@ -15,8 +16,9 @@ from transformers import Blip2ForConditionalGeneration, Blip2Processor, BitsAndB
 
 from ..configs.config import ExperimentConfig
 from ..datasets.collator import Blip2Collator
-from ..datasets.preprocessing import resolve_split_paths
-from ..utils.io import load_json, load_jsonl
+from ..datasets.preprocessing import build_result_record, resolve_split_paths, resolve_test_path
+from ..metrics.metrics import calculate_spatial_metrics
+from ..utils.io import load_json, load_jsonl, save_jsonl
 from ..utils.logging import setup_logger
 from ..utils.seed import set_seed
 
@@ -120,6 +122,48 @@ def compute_eval_loss(
     return eval_loss / len(dataloader)
 
 
+def compute_dev_accuracy(
+    model,
+    valid_dataset,
+    processor,
+    device,
+    bf16: bool = True,
+    batch_size: int = 8,
+) -> float:
+    """Compute accuracy on dev set for model selection."""
+    model.eval()
+    predictions = []
+
+    with torch.no_grad():
+        for idx in tqdm(range(len(valid_dataset)), desc="[Dev Accuracy]"):
+            item = valid_dataset[idx]
+            question = item["question"]
+            image_path = valid_dataset.image_dir / item["image"]
+            image = Image.open(image_path).convert("RGB")
+
+            options = item.get("options", [])
+            if options:
+                options_str = ", ".join(options)
+                prompt = f"Question: {question} Options: {options_str} Answer:"
+            else:
+                prompt = f"Question: {question} Answer:"
+
+            inputs = processor(images=image, text=prompt, return_tensors="pt").to(device)
+            outputs = model.generate(**inputs, max_new_tokens=20)
+            input_len = inputs.input_ids.shape[1]
+            generated_ids = outputs[:, input_len:]
+            decoded = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            pred_answer = decoded.strip().rstrip(".")
+
+            if not pred_answer:
+                pred_answer = "--"
+
+            predictions.append(build_result_record(item, idx, pred_answer))
+
+    metrics = calculate_spatial_metrics(predictions)
+    return metrics["accuracy"]
+
+
 def run_train(args, config: ExperimentConfig):
     set_seed(config.training.seed)
 
@@ -208,9 +252,11 @@ def run_train(args, config: ExperimentConfig):
     criterion = nn.CrossEntropyLoss(ignore_index=1)
 
     min_eval_loss = float("inf")
+    best_dev_accuracy = 0.0
     early_stopping_hook = 0
     losses_history = []
     dev_loss_history = []
+    dev_accuracy_history = []
     log_history = []
     global_step = 0
 
@@ -247,27 +293,35 @@ def run_train(args, config: ExperimentConfig):
         )
         dev_loss_history.append({"epoch": epoch + 1, "eval_loss": eval_loss})
 
+        dev_accuracy = compute_dev_accuracy(
+            model, valid_dataset, processor, device,
+            bf16=config.training.bf16, batch_size=batch_size
+        )
+        dev_accuracy_history.append({"epoch": epoch + 1, "dev_accuracy": dev_accuracy})
+
         log_item = {
             "epoch": epoch + 1,
             "train_loss": epoch_loss / len(train_dataloader),
             "eval_loss": eval_loss,
+            "dev_accuracy": dev_accuracy,
             "lr": optimizer.param_groups[0]["lr"],
         }
         log_history.append(log_item)
 
         logger.info(
             f"Epoch {epoch + 1} | Train Loss: {log_item['train_loss']:.4f} | "
-            f"Eval Loss: {eval_loss:.4f} | LR: {log_item['lr']}"
+            f"Eval Loss: {eval_loss:.4f} | Dev Acc: {dev_accuracy:.4f} | LR: {log_item['lr']}"
         )
         scheduler.step()
 
-        if eval_loss < min_eval_loss:
-            min_eval_loss = eval_loss
+        # Select best model based on dev accuracy, not loss
+        if dev_accuracy > best_dev_accuracy:
+            best_dev_accuracy = dev_accuracy
             early_stopping_hook = 0
             save_path = out_checkpoint / "best_model"
             model.save_pretrained(save_path)
             processor.save_pretrained(save_path)
-            logger.info(f"Saved best model with eval loss {eval_loss:.4f} to {save_path}")
+            logger.info(f"Saved best model with dev accuracy {dev_accuracy:.4f} to {save_path}")
         else:
             early_stopping_hook += 1
             if early_stopping_hook > config.training.patience:
@@ -278,18 +332,20 @@ def run_train(args, config: ExperimentConfig):
             json.dump(losses_history, file, indent=4)
         with open(out_results / "dev_loss.json", "w", encoding="utf-8") as file:
             json.dump(dev_loss_history, file, indent=4)
+        with open(out_results / "dev_accuracy.json", "w", encoding="utf-8") as file:
+            json.dump(dev_accuracy_history, file, indent=4)
         with open(out_results / "log.json", "w", encoding="utf-8") as file:
             json.dump(log_history, file, indent=4)
 
     # Save final best metric
-    with open(out_results / "last_dev_metric.json", "w", encoding="utf-8") as file:
-        json.dump({"best_eval_loss": min_eval_loss}, file, indent=4)
+    with open(out_results / "best_dev_metric.json", "w", encoding="utf-8") as file:
+        json.dump({"best_dev_accuracy": best_dev_accuracy, "best_dev_loss": min_eval_loss}, file, indent=4)
 
-    logger.info("BLIP-2 training complete. Running evaluation on test set...")
+    logger.info("BLIP-2 training complete. Loading best model for evaluation on test set...")
 
     best_model_path = out_checkpoint / "best_model"
     if best_model_path.exists():
-        from src.inference.inference_blip2 import run_infer as blip2_infer
+        from ..inference.inference_blip2 import run_infer as blip2_infer
 
         class Args:
             out_checkpoint = str(best_model_path)
