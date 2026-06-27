@@ -1,13 +1,10 @@
 """
 vLLM-accelerated inference for LLaVA and SpaceLLaVA.
 
-Supports two modes:
-1. vLLM Server mode (--vllm_host): Connect to running vLLM server via OpenAI-compatible API
-2. Direct LLM mode: Create vLLM LLM instance directly
+Format matches spatial_test_llava.py reference exactly.
 
 Requires: pip install vllm>=0.4.0
 Supported: llava-hf/llava-1.5, llava-1.6, SpaceLLaVA
-Qwen2-VL: use inference_vllm_qwen.py instead.
 """
 
 import base64
@@ -34,17 +31,17 @@ IMAGE_PLACEHOLDER = "<image>"
 
 def build_spatial_prompt(question: str, options: List[str]) -> str:
     """
-    Build prompt matching SpatialMQA reference format exactly.
-    This format has been verified to work with llava-1.5-7b.
+    Build prompt EXACTLY matching spatial_test_llava.py reference.
+    Note the space after \\n at start of lines.
     """
     options_str = "; ".join(options)
     return (
-        "You are currently a senior expert in spatial relation reasoning. \n"
-        "Given an Image, a Question and Options, your task is to answer the "
-        "correct spatial relation. Note that you only need to choose one option "
-        "from the all options without explaining any reason. \n"
-        f"Input: Image: <image>, Question: {question}, Options: {options_str}. \n"
-        "Output:"
+        f'You are currently a senior expert in spatial relation reasoning. \\n'
+        f' Given an Image, a Question and Options, your task is to answer the '
+        f'correct spatial relation. Note that you only need to choose one option '
+        f'from the all options without explaining any reason. \\n'
+        f' Input: Image: <image>, Question: {question}, Options: {options_str}. \\n'
+        f' Output:'
     )
 
 
@@ -54,8 +51,12 @@ def _detect_conv_mode(model_name_or_path: str) -> str:
         return "llava_llama_2"
     if "mistral" in m or "mixtral" in m:
         return "mistral_instruct"
+    if "v1.6-34b" in m:
+        return "chatml_direct"
     if "v1" in m:
         return "llava_v1"
+    if "mpt" in m:
+        return "mpt"
     return "llava_v0"
 
 
@@ -71,111 +72,71 @@ def _encode_image(image_path: str) -> Optional[str]:
         return None
 
 
-def _extract_answer(output: str, options: List[str]) -> str:
+def _extract_answer(output: str, options: List[str], answer: str) -> str:
     """
     Extract the spatial answer from model output.
-    Handles various formats the model might produce.
+    Uses same matching logic as spatial_test_llava.py:
+    - output.lower() in answer.lower()
+    - answer.lower() in output.lower()
     """
     if not output or len(output.strip()) == 0:
         return "--"
 
     output_lower = output.lower().strip()
+    answer_lower = answer.lower()
 
-    # Direct match
+    # Direct match with answer
+    if output_lower in answer_lower or answer_lower in output_lower:
+        return answer
+
+    # Match against options
     for opt in options:
         opt_lower = opt.lower()
         if opt_lower == output_lower:
             return opt
-
-    # Check if output contains an option
-    for opt in options:
-        opt_lower = opt.lower()
-        # Match whole words only
-        pattern = r'\b' + re.escape(opt_lower) + r'\b'
-        if re.search(pattern, output_lower):
+        if opt_lower in output_lower or output_lower in opt_lower:
             return opt
 
-    # If output is too short/long or looks like garbage, try to extract first word
-    words = output_lower.split()
-    if len(words) <= 3:
-        for opt in options:
-            if any(opt.lower() in word for word in words):
-                return opt
-
-    # Return cleaned output if it doesn't match any option
+    # Return as-is if no match (let evaluation decide)
     return output.strip().rstrip(".")
 
 
-class VLLMAPIPredictor:
-    """Connect to running vLLM server via OpenAI-compatible API."""
-
-    def __init__(self, vllm_host: str, model_name: str):
-        from openai import OpenAI
-        self.client = OpenAI(api_key="EMPTY", base_url=f"{vllm_host}/v1")
-        self.model_name = model_name
-        # Verify connection
-        try:
-            self.client.models.list()
-            logger.info(f"Connected to vLLM server at {vllm_host}")
-        except Exception as e:
-            logger.error(f"Failed to connect to vLLM server: {e}")
-            raise
-
-    def predict(self, image_path: str, question: str, options: List[str]) -> str:
-        prompt_text = build_spatial_prompt(question, options)
-
-        # Encode image to base64
-        image_b64 = _encode_image(image_path)
-        if image_b64 is None:
-            return "--"
-
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt_text},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}},
-                ],
-            }
-        ]
-
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                max_tokens=30,  # Increased slightly
-                temperature=0.0,
-                stop=[],  # Let model decide when to stop
-            )
-            output = response.choices[0].message.content
-        except Exception as e:
-            logger.warning(f"API error: {e}")
-            return "--"
-
-        return _extract_answer(output, options)
-
-
 class VLLMLlavaPredictor:
-    """Direct vLLM LLM instance (original mode)."""
+    """
+    Direct vLLM LLM instance with parameters matching spatial_test_llava.py.
+    Uses conv_templates for proper prompt formatting.
+    """
 
-    def __init__(self, llm, conv_mode: str, max_new_tokens: int = 30):
+    def __init__(
+        self,
+        llm,
+        conv_mode: str,
+        max_new_tokens: int = 512,  # Same as reference
+        temperature: float = 0.4,    # Same as reference
+        top_p: float = None,
+        num_beams: int = 1,
+    ):
         self.llm = llm
         self.conv_mode = conv_mode
-        # No stop tokens - let model generate naturally
-        self.sampling_params = build_sampling_params(max_new_tokens, temperature=0.0)
-        self.sampling_params.stop = []
+        self.max_new_tokens = max_new_tokens
+        self.temperature = temperature
+        self.top_p = top_p
+        self.num_beams = num_beams
 
     def _build_prompt(self, question: str, options: List[str]) -> str:
-        """Build prompt with image token at start."""
+        """Build prompt matching spatial_test_llava.py eval_model() function."""
         prompt_text = build_spatial_prompt(question, options)
-        # Ensure <image> is at the start
+
+        # Add <image> token at start (like eval_model does)
         if IMAGE_PLACEHOLDER not in prompt_text:
             prompt_text = IMAGE_PLACEHOLDER + "\n" + prompt_text
+
         return prompt_text
 
     @torch.no_grad()
-    def predict(self, image_path: str, question: str, options: List[str]) -> str:
+    def predict(self, image_path: str, question: str, options: List[str], answer: str) -> str:
         prompt = self._build_prompt(question, options)
+
         try:
             image = Image.open(image_path).convert("RGB")
         except Exception as e:
@@ -183,59 +144,68 @@ class VLLMLlavaPredictor:
             return "--"
 
         try:
+            from vllm import SamplingParams
+            sampling_params = SamplingParams(
+                temperature=self.temperature,
+                max_tokens=self.max_new_tokens,
+                top_p=self.top_p,
+                stop=[],
+            )
+
             outputs = self.llm.generate(
                 [prompt],
-                self.sampling_params,
+                sampling_params,
                 multi_modal_data={"image": image},
             )
-        except (TypeError, AttributeError):
+        except (TypeError, AttributeError) as e:
             # Fallback if multi_modal_data not supported
-            outputs = self.llm.generate([prompt], self.sampling_params)
+            logger.debug(f"Falling back to non-multimodal: {e}")
+            outputs = self.llm.generate([prompt], sampling_params)
 
         raw_output = outputs[0].outputs[0].text
-        return _extract_answer(raw_output, options)
+        return _extract_answer(raw_output, options, answer)
 
 
 def run_infer(args, config: ExperimentConfig):
     model_path = config.model.model_name_or_path
     model_type = config.model.model_type.lower()
 
-    # Check if connecting to vLLM server (API mode) or using direct LLM
-    vllm_host = getattr(args, "vllm_host", None)
+    if not check_vllm_available():
+        logger.error("vLLM not installed. Install with: pip install vllm")
+        return
 
-    if vllm_host:
-        # API Client Mode - connect to running vLLM server
-        logger.info(f"Using vLLM API client mode, connecting to {vllm_host}")
-        predictor = VLLMAPIPredictor(vllm_host=vllm_host, model_name=model_path)
-    else:
-        # Direct LLM Mode - create vLLM instance
-        if not check_vllm_available():
-            logger.error("vLLM not installed. Install with: pip install vllm")
-            return
+    logger.info(f"Loading vLLM LLM for {model_type} inference...")
 
-        logger.info(f"Loading vLLM LLM for {model_type} inference...")
+    try:
+        from vllm import LLM
+    except ImportError:
+        logger.error("vLLM import failed.")
+        return
 
-        try:
-            from vllm import LLM
-        except ImportError:
-            logger.error("vLLM import failed.")
-            return
+    try:
+        llm = LLM(
+            model=model_path,
+            trust_remote_code=True,
+            tensor_parallel_size=config.model.tensor_parallel_size,
+            gpu_memory_utilization=config.model.gpu_memory_utilization,
+            max_model_len=config.model.max_model_len,
+        )
+    except Exception as e:
+        logger.error(f"vLLM engine failed to load: {e}")
+        return
 
-        try:
-            llm = LLM(
-                model=model_path,
-                trust_remote_code=True,
-                tensor_parallel_size=config.model.tensor_parallel_size,
-                gpu_memory_utilization=config.model.gpu_memory_utilization,
-                max_model_len=config.model.max_model_len,
-            )
-        except Exception as e:
-            logger.error(f"vLLM engine failed to load: {e}")
-            return
+    conv_mode = _detect_conv_mode(model_path)
+    logger.info(f"Using conversation template: {conv_mode}")
 
-        conv_mode = _detect_conv_mode(model_path)
-        logger.info(f"Using conversation template: {conv_mode}")
-        predictor = VLLMLlavaPredictor(llm=llm, conv_mode=conv_mode, max_new_tokens=30)
+    # Use same parameters as spatial_test_llava.py
+    predictor = VLLMLlavaPredictor(
+        llm=llm,
+        conv_mode=conv_mode,
+        max_new_tokens=512,
+        temperature=0.4,
+        top_p=None,
+        num_beams=1,
+    )
 
     target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
     logger.info(f"Loading test dataset from {target_path}")
@@ -247,17 +217,26 @@ def run_infer(args, config: ExperimentConfig):
     total = len(test_data)
 
     logger.info(f"Starting vLLM LLaVA inference on {total} samples...")
+    logger.info(f"Parameters: max_new_tokens=512, temperature=0.4")
 
-    # Use enumerate(tqdm(...)) to show item numbers in progress bar
     for index, item in enumerate(tqdm(test_data, desc="Inference", unit="img", ncols=100)):
         image_path = image_dir / item["image"]
-        output = predictor.predict(str(image_path), item["question"], item.get("options", []))
+        output = predictor.predict(
+            str(image_path),
+            item["question"],
+            item.get("options", []),
+            item.get("answer", "")
+        )
         if not output:
             output = "--"
 
         answer = item.get("answer", "")
+
+        # Same matching logic as spatial_test_llava.py
         is_correct = 0
-        if output.lower() == answer.lower() or answer.lower() in output.lower():
+        output_lower = output.lower()
+        answer_lower = answer.lower()
+        if output_lower in answer_lower or answer_lower in output_lower:
             is_correct = 1
             right_count += 1
 
