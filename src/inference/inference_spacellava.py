@@ -182,14 +182,37 @@ def llava_generate(model, input_ids, images_tensor, image_sizes, *,
 
 # ── Model loading ──────────────────────────────────────────────────────
 def _load_tokenizer_and_image_processor(model_path: str):
-    image_processor = AutoImageProcessor.from_pretrained(model_path)
-    try:
-        tokenizer = LlamaTokenizer.from_pretrained(model_path, use_fast=False, legacy=False)
-    except Exception as e:
-        logger.warning(f"LlamaTokenizer legacy=False failed ({e}); retrying legacy=True")
-        tokenizer = LlamaTokenizer.from_pretrained(model_path, use_fast=False, legacy=True)
+    # Load vision tower config first to derive the image processor type
+    from transformers import AutoConfig
+    cfg = AutoConfig.from_pretrained(model_path)
+
+    # Pick the image processor matching the vision tower architecture.
+    # For LLaVA-v1.5 / SpaceLLaVA this is CLIP.
+    vision_config = getattr(cfg, "vision_config", None)
+    if vision_config is None:
+        # fallback: try CLIPImageProcessor directly
+        from transformers import CLIPImageProcessor
+        image_processor = CLIPImageProcessor.from_pretrained(model_path)
+    else:
+        image_processor = AutoImageProcessor.from_pretrained(model_path)
+
+    sp_model_path = Path(model_path) / "tokenizer.model"
+    if not sp_model_path.exists():
+        candidates = list(Path(model_path).rglob("tokenizer.model"))
+        if candidates:
+            sp_model_path = candidates[0]
+
+    if not sp_model_path.exists():
+        raise FileNotFoundError(f"tokenizer.model not found under {model_path}")
+
+    logger.info(f"Loading SentencePiece tokenizer from {sp_model_path}")
+    tokenizer = LlamaTokenizer(
+        vocab_file=str(sp_model_path),
+        legacy=True,
+    )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+
     return tokenizer, image_processor
 
 
