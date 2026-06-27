@@ -148,7 +148,7 @@ class VLLMLlavaPredictor:
             sampling_params = SamplingParams(
                 temperature=self.temperature,
                 max_tokens=self.max_new_tokens,
-                top_p=self.top_p,
+                top_p=self.top_p if self.top_p is not None else 1.0,
                 stop=[],
             )
 
