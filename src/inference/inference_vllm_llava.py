@@ -203,49 +203,25 @@ def run_infer(args, config: ExperimentConfig):
     logger.info(f"Loading vLLM LLM for {model_type} inference...")
 
     try:
-        from vllm import LLM, LoraConfig
+        from vllm import LLM
     except ImportError as e:
         logger.error(f"vLLM import failed: {e}")
         import traceback
         traceback.print_exc()
         return
 
-    # Build LLM kwargs
-    llm_kwargs = {
-        "model": model_path,
-        "trust_remote_code": True,
-        "tensor_parallel_size": config.model.tensor_parallel_size,
-        "gpu_memory_utilization": config.model.gpu_memory_utilization,
-        "max_model_len": config.model.max_model_len,
-    }
-
-    # Load LoRA if configured
-    if getattr(config.model, "use_lora", False):
-        lora_path = getattr(args, "lora_path", None)
-        if lora_path is None:
-            output_dir = Path(config.training.output_dir)
-            possible_lora = output_dir / "final"
-            if possible_lora.exists():
-                lora_path = str(possible_lora)
-            else:
-                adapters = list(output_dir.glob("adapter*"))
-                if adapters:
-                    lora_path = str(adapters[0])
-
-        if lora_path:
-            logger.info(f"Loading LoRA adapter from: {lora_path}")
-            lora_config = LoraConfig(
-                lora_r=config.model.lora_r,
-                lora_alpha=config.model.lora_alpha,
-                lora_dropout=0.05,
-            )
-            llm_kwargs["lora_config"] = lora_config
-            llm_kwargs["auto_model_type"] = "causal"
-
     try:
-        llm = LLM(**llm_kwargs)
+        llm = LLM(
+            model=model_path,
+            trust_remote_code=True,
+            tensor_parallel_size=config.model.tensor_parallel_size,
+            gpu_memory_utilization=config.model.gpu_memory_utilization,
+            max_model_len=config.model.max_model_len,
+        )
     except Exception as e:
         logger.error(f"vLLM engine failed to load: {e}")
+        import traceback
+        traceback.print_exc()
         return
 
     conv_mode = _detect_conv_mode(model_path)
