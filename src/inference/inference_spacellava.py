@@ -16,6 +16,7 @@ Pipeline mirrors the reference line-for-line:
 """
 
 from pathlib import Path
+import os
 
 import torch
 from PIL import Image
@@ -181,7 +182,38 @@ def llava_generate(model, input_ids, images_tensor, image_sizes, *,
 
 
 # ── Model loading ──────────────────────────────────────────────────────
+def _resolve_local_model_path(model_path: str) -> str:
+    """
+    Resolve a HuggingFace hub ID (e.g. 'remyxai/SpaceLLaVA') to its local
+    snapshot directory inside HF cache. If `model_path` is already a
+    local directory, return it as-is.
+    """
+    p = Path(model_path)
+    if p.is_dir():
+        return str(p)
+    # Snapshots live under: <cache>/hub/models--<org>--<name>/snapshots/<sha>/
+    # The cache root is whatever $HF_HOME (or default ~/.cache/huggingface) points to.
+    hf_home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
+    hub_dir = hf_home / "hub"
+    # Sanitize: "remyxai/SpaceLLaVA" → "models--remyxai--SpaceLLaVA"
+    safe_name = "models--" + model_path.replace("/", "--")
+    snapshots = hub_dir / safe_name / "snapshots"
+    if snapshots.is_dir():
+        # Pick the first snapshot dir (there's usually only one)
+        for child in sorted(snapshots.iterdir()):
+            if child.is_dir():
+                logger.info(f"Resolved HF hub ID {model_path!r} → {child}")
+                return str(child)
+    # Fallback: return original path; downstream will error if missing
+    logger.warning(f"Could not resolve HF hub ID {model_path!r} under {snapshots}; "
+                   f"using as-is.")
+    return model_path
+
+
 def _load_tokenizer_and_image_processor(model_path: str):
+    # Resolve HF hub ID to local snapshot path
+    model_path = _resolve_local_model_path(model_path)
+
     # Load vision tower config first to derive the image processor type
     from transformers import AutoConfig
     cfg = AutoConfig.from_pretrained(model_path)
@@ -190,7 +222,6 @@ def _load_tokenizer_and_image_processor(model_path: str):
     # For LLaVA-v1.5 / SpaceLLaVA this is CLIP.
     vision_config = getattr(cfg, "vision_config", None)
     if vision_config is None:
-        # fallback: try CLIPImageProcessor directly
         from transformers import CLIPImageProcessor
         image_processor = CLIPImageProcessor.from_pretrained(model_path)
     else:
@@ -203,7 +234,10 @@ def _load_tokenizer_and_image_processor(model_path: str):
             sp_model_path = candidates[0]
 
     if not sp_model_path.exists():
-        raise FileNotFoundError(f"tokenizer.model not found under {model_path}")
+        raise FileNotFoundError(
+            f"tokenizer.model not found under {model_path}. "
+            f"Contents: {list(Path(model_path).iterdir())[:20]}"
+        )
 
     logger.info(f"Loading SentencePiece tokenizer from {sp_model_path}")
     tokenizer = LlamaTokenizer(
