@@ -21,7 +21,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from ..configs.config import ExperimentConfig
-from ..datasets.preprocessing import build_result_record, build_spatial_prompt, resolve_test_path
+from ..datasets.preprocessing import build_result_record, resolve_test_path
 from ..metrics.metrics import calculate_spatial_metrics
 from ..utils.io import load_jsonl, save_jsonl
 from ..utils.logging import setup_logger
@@ -32,18 +32,20 @@ logger = setup_logger(__name__)
 IMAGE_PLACEHOLDER = "<image>"
 
 
-def _conv_prompt(question: str, options: List[str], conv_mode: str) -> str:
-    prompt_text = build_spatial_prompt(question, options)
-
-    # Minimal prompt formatting that does not require the `llava` package.
-    # vLLM will apply the model's chat template during generation, so we only
-    # need to ensure the image placeholder is present.
-    image_token = "<image>"
-    if IMAGE_PLACEHOLDER in prompt_text:
-        prompt_text = re.sub(IMAGE_PLACEHOLDER, image_token, prompt_text)
-    else:
-        prompt_text = image_token + "\n" + prompt_text
-    return prompt_text
+def build_spatial_prompt(question: str, options: List[str]) -> str:
+    """
+    Build prompt matching SpatialMQA reference format exactly.
+    This format has been verified to work with llava-1.5-7b.
+    """
+    options_str = "; ".join(options)
+    return (
+        "You are currently a senior expert in spatial relation reasoning. \n"
+        "Given an Image, a Question and Options, your task is to answer the "
+        "correct spatial relation. Note that you only need to choose one option "
+        "from the all options without explaining any reason. \n"
+        f"Input: Image: <image>, Question: {question}, Options: {options_str}. \n"
+        "Output:"
+    )
 
 
 def _detect_conv_mode(model_name_or_path: str) -> str:
@@ -67,6 +69,41 @@ def _encode_image(image_path: str) -> Optional[str]:
     except Exception as e:
         logger.error(f"Failed to encode image {image_path}: {e}")
         return None
+
+
+def _extract_answer(output: str, options: List[str]) -> str:
+    """
+    Extract the spatial answer from model output.
+    Handles various formats the model might produce.
+    """
+    if not output or len(output.strip()) == 0:
+        return "--"
+
+    output_lower = output.lower().strip()
+
+    # Direct match
+    for opt in options:
+        opt_lower = opt.lower()
+        if opt_lower == output_lower:
+            return opt
+
+    # Check if output contains an option
+    for opt in options:
+        opt_lower = opt.lower()
+        # Match whole words only
+        pattern = r'\b' + re.escape(opt_lower) + r'\b'
+        if re.search(pattern, output_lower):
+            return opt
+
+    # If output is too short/long or looks like garbage, try to extract first word
+    words = output_lower.split()
+    if len(words) <= 3:
+        for opt in options:
+            if any(opt.lower() in word for word in words):
+                return opt
+
+    # Return cleaned output if it doesn't match any option
+    return output.strip().rstrip(".")
 
 
 class VLLMAPIPredictor:
@@ -106,44 +143,45 @@ class VLLMAPIPredictor:
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
-                max_tokens=20,
+                max_tokens=30,  # Increased slightly
                 temperature=0.0,
-                stop=["\n", ".", ";"],
+                stop=[],  # Let model decide when to stop
             )
-            output = response.choices[0].message.content.strip()
+            output = response.choices[0].message.content
         except Exception as e:
             logger.warning(f"API error: {e}")
             return "--"
 
-        if not output:
-            return "--"
-
-        # Clean and match against options
-        output_clean = output.lower()
-        for opt in options:
-            if opt.lower() == output_clean:
-                return opt
-            if opt.lower() in output_clean:
-                return opt
-        return output
+        return _extract_answer(output, options)
 
 
 class VLLMLlavaPredictor:
     """Direct vLLM LLM instance (original mode)."""
 
-    def __init__(self, llm, conv_mode: str, max_new_tokens: int = 20):
+    def __init__(self, llm, conv_mode: str, max_new_tokens: int = 30):
         self.llm = llm
         self.conv_mode = conv_mode
+        # No stop tokens - let model generate naturally
         self.sampling_params = build_sampling_params(max_new_tokens, temperature=0.0)
+        self.sampling_params.stop = []
+
+    def _build_prompt(self, question: str, options: List[str]) -> str:
+        """Build prompt with image token at start."""
+        prompt_text = build_spatial_prompt(question, options)
+        # Ensure <image> is at the start
+        if IMAGE_PLACEHOLDER not in prompt_text:
+            prompt_text = IMAGE_PLACEHOLDER + "\n" + prompt_text
+        return prompt_text
 
     @torch.no_grad()
     def predict(self, image_path: str, question: str, options: List[str]) -> str:
-        prompt = _conv_prompt(question, options, self.conv_mode)
+        prompt = self._build_prompt(question, options)
         try:
             image = Image.open(image_path).convert("RGB")
         except Exception as e:
             logger.error(f"Failed to open image {image_path}: {e}")
             return "--"
+
         try:
             outputs = self.llm.generate(
                 [prompt],
@@ -151,8 +189,11 @@ class VLLMLlavaPredictor:
                 multi_modal_data={"image": image},
             )
         except (TypeError, AttributeError):
+            # Fallback if multi_modal_data not supported
             outputs = self.llm.generate([prompt], self.sampling_params)
-        return outputs[0].outputs[0].text.strip().rstrip(".")
+
+        raw_output = outputs[0].outputs[0].text
+        return _extract_answer(raw_output, options)
 
 
 def run_infer(args, config: ExperimentConfig):
@@ -194,7 +235,7 @@ def run_infer(args, config: ExperimentConfig):
 
         conv_mode = _detect_conv_mode(model_path)
         logger.info(f"Using conversation template: {conv_mode}")
-        predictor = VLLMLlavaPredictor(llm=llm, conv_mode=conv_mode, max_new_tokens=20)
+        predictor = VLLMLlavaPredictor(llm=llm, conv_mode=conv_mode, max_new_tokens=30)
 
     target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
     logger.info(f"Loading test dataset from {target_path}")
