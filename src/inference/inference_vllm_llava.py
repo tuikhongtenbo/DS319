@@ -7,9 +7,7 @@ Requires: pip install vllm>=0.4.0
 Supported: llava-hf/llava-1.5, llava-1.6, SpaceLLaVA
 """
 
-import base64
 import re
-from io import BytesIO
 from pathlib import Path
 from typing import List, Optional
 
@@ -22,17 +20,18 @@ from ..datasets.preprocessing import build_result_record, resolve_test_path
 from ..metrics.metrics import calculate_spatial_metrics
 from ..utils.io import load_jsonl, save_jsonl
 from ..utils.logging import setup_logger
-from .inference_vllm_base import check_vllm_available, build_sampling_params
+from .inference_vllm_base import check_vllm_available
 
 logger = setup_logger(__name__)
-
-IMAGE_PLACEHOLDER = "<image>"
 
 
 def build_spatial_prompt(question: str, options: List[str]) -> str:
     """
     Build prompt EXACTLY matching spatial_test_llava.py reference.
-    Note the space after \\n at start of lines.
+
+    The reference uses literal \\n inside the f-string (which produces the
+    two-character sequence backslash-n in the final string). We replicate
+    that here so the model sees the identical prompt.
     """
     options_str = "; ".join(options)
     return (
@@ -60,51 +59,13 @@ def _detect_conv_mode(model_name_or_path: str) -> str:
     return "llava_v0"
 
 
-def _encode_image(image_path: str) -> Optional[str]:
-    """Encode image to base64 string."""
-    try:
-        with Image.open(image_path) as img:
-            buffered = BytesIO()
-            img.save(buffered, format=img.format or "JPEG")
-            return base64.b64encode(buffered.getvalue()).decode()
-    except Exception as e:
-        logger.error(f"Failed to encode image {image_path}: {e}")
-        return None
-
-
-def _extract_answer(output: str, options: List[str], answer: str) -> str:
-    """
-    Extract the spatial answer from model output.
-    Uses same matching logic as spatial_test_llava.py:
-    - output.lower() in answer.lower()
-    - answer.lower() in output.lower()
-    """
-    if not output or len(output.strip()) == 0:
-        return "--"
-
-    output_lower = output.lower().strip()
-    answer_lower = answer.lower()
-
-    # Direct match with answer
-    if output_lower in answer_lower or answer_lower in output_lower:
-        return answer
-
-    # Match against options
-    for opt in options:
-        opt_lower = opt.lower()
-        if opt_lower == output_lower:
-            return opt
-        if opt_lower in output_lower or output_lower in opt_lower:
-            return opt
-
-    # Return as-is if no match (let evaluation decide)
-    return output.strip().rstrip(".")
-
-
 class VLLMLlavaPredictor:
     """
     Direct vLLM LLM instance with parameters matching spatial_test_llava.py.
-    Uses conv_templates for proper prompt formatting.
+
+    Key difference from the old version:
+    - Uses vLLM dict-based input: {"prompt": ..., "multi_modal_data": {"image": ...}}
+    - No silent fallback to text-only generation on error.
     """
 
     def __init__(
@@ -127,36 +88,65 @@ class VLLMLlavaPredictor:
         self.tokenizer = self.llm.get_tokenizer()
 
     def _build_prompt(self, question: str, options: List[str]) -> str:
-        """Build prompt with proper chat template for vLLM."""
+        """
+        Build prompt with proper chat template for vLLM.
+
+        For llava-hf models the tokenizer has a chat_template that
+        understands {"type": "image"} entries. We try that first and
+        fall back to a simple USER/ASSISTANT wrapper.
+        """
         options_str = "; ".join(options)
+        # Prompt text matching the reference spatial_test_llava.py exactly.
+        # The reference uses literal \\n (backslash-n) in the f-string.
         prompt_text = (
-            f'You are currently a senior expert in spatial relation reasoning. \n'
+            f'You are currently a senior expert in spatial relation reasoning. \\n'
             f' Given an Image, a Question and Options, your task is to answer the '
             f'correct spatial relation. Note that you only need to choose one option '
-            f'from the all options without explaining any reason. \n'
-            f' Input: Image: <image>, Question: {question}, Options: {options_str}. \n'
+            f'from the all options without explaining any reason. \\n'
+            f' Input: Image: <image>, Question: {question}, Options: {options_str}. \\n'
             f' Output:'
         )
 
-        # Build chat messages (no system message, user only)
-        messages = [
-            {"role": "user", "content": [
-                {"type": "image"},
-                {"type": "text", "text": prompt_text}
-            ]}
-        ]
-
-        # Apply chat template
+        # --- Strategy 1: Use HF chat template (works for llava-hf models) ---
         try:
+            messages = [
+                {"role": "user", "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": prompt_text}
+                ]}
+            ]
             prompt = self.tokenizer.apply_chat_template(
                 messages,
                 add_generation_prompt=True,
                 tokenize=False,
             )
+            return prompt
         except Exception as e:
-            logger.warning(f"Chat template failed, using raw prompt: {e}")
-            prompt = "<image>\n" + prompt_text
+            logger.warning(f"Chat template with image dict failed: {e}")
 
+        # --- Strategy 2: Text-only chat template + manual <image> token ---
+        try:
+            messages = [
+                {"role": "user", "content": prompt_text}
+            ]
+            prompt = self.tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=False,
+            )
+            # Ensure <image> is present for vLLM to bind the pixel data
+            if "<image>" not in prompt:
+                prompt = "<image>\n" + prompt
+            return prompt
+        except Exception as e:
+            logger.warning(f"Text chat template also failed: {e}")
+
+        # --- Strategy 3: Manual LLaVA-v1 format ---
+        logger.warning("Using manual LLaVA-v1 prompt format as last resort.")
+        prompt = (
+            f"USER: <image>\n{prompt_text}\n"
+            f"ASSISTANT:"
+        )
         return prompt
 
     @torch.no_grad()
@@ -169,27 +159,33 @@ class VLLMLlavaPredictor:
             logger.error(f"Failed to open image {image_path}: {e}")
             return "--"
 
+        from vllm import SamplingParams
+        sampling_params = SamplingParams(
+            temperature=self.temperature,
+            max_tokens=self.max_new_tokens,
+            top_p=self.top_p if self.top_p is not None else 1.0,
+            stop=[],
+        )
+
+        # ── Correct vLLM multimodal API ──────────────────────────────
+        # Pass image via dict-based input, NOT as a keyword argument.
         try:
-            from vllm import SamplingParams
-            sampling_params = SamplingParams(
-                temperature=self.temperature,
-                max_tokens=self.max_new_tokens,
-                top_p=self.top_p if self.top_p is not None else 1.0,
-                stop=[],
-            )
-
             outputs = self.llm.generate(
-                [prompt],
-                sampling_params,
-                multi_modal_data={"image": image},
+                {
+                    "prompt": prompt,
+                    "multi_modal_data": {"image": image},
+                },
+                sampling_params=sampling_params,
             )
-        except (TypeError, AttributeError) as e:
-            # Fallback if multi_modal_data not supported
-            logger.debug(f"Falling back to non-multimodal: {e}")
-            outputs = self.llm.generate([prompt], sampling_params)
+        except Exception as e:
+            # Do NOT silently fall back to text-only — that hides the real bug.
+            logger.error(f"vLLM generate failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return "--"
 
-        raw_output = outputs[0].outputs[0].text
-        return _extract_answer(raw_output, options, answer)
+        raw_output = outputs[0].outputs[0].text.strip()
+        return raw_output
 
 
 def run_infer(args, config: ExperimentConfig):
@@ -250,43 +246,43 @@ def run_infer(args, config: ExperimentConfig):
     logger.info(f"Parameters: max_new_tokens=512, temperature=0.4")
     logger.info(f"Model path: {model_path}")
 
-    # Debug: log first 3 raw outputs
+    # Debug: log first 3 prompts + raw outputs
     debug_printed = 0
 
     for index, item in enumerate(tqdm(test_data, desc="Inference", unit="img", ncols=100)):
         image_path = image_dir / item["image"]
-        output = predictor.predict(
+        raw_output = predictor.predict(
             str(image_path),
             item["question"],
             item.get("options", []),
             item.get("answer", "")
         )
 
-        # Debug: log first 3 raw outputs
+        # Debug: log first 3 raw outputs to verify model is actually generating
         if debug_printed < 3:
-            logger.info(f"[DEBUG] Sample {index} raw output: '{output}'")
+            logger.info(f"[DEBUG] Sample {index} raw output: '{raw_output}'")
             debug_printed += 1
 
-        if not output:
-            output = "--"
+        if not raw_output or len(raw_output.strip()) == 0:
+            raw_output = "--"
 
         answer = item.get("answer", "")
 
         # Same matching logic as spatial_test_llava.py
         is_correct = 0
-        output_lower = output.lower()
+        output_lower = raw_output.lower()
         answer_lower = answer.lower()
         if output_lower in answer_lower or answer_lower in output_lower:
             is_correct = 1
             right_count += 1
 
-        predictions.append(build_result_record(item, index, output))
+        predictions.append(build_result_record(item, index, raw_output))
 
         # Log progress every 20 items
         if (index + 1) % 20 == 0 or index == 0:
             acc = right_count / (index + 1)
             logger.info(
-                f"[{index + 1}/{total}] Output: '{output}' | Answer: '{answer}' | "
+                f"[{index + 1}/{total}] Output: '{raw_output}' | Answer: '{answer}' | "
                 f"Correct: {right_count}/{index + 1} ({acc:.2%})"
             )
 
