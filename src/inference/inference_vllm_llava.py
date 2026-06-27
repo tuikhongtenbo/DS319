@@ -189,13 +189,6 @@ class VLLMLlavaPredictor:
             outputs = self.llm.generate([prompt], sampling_params)
 
         raw_output = outputs[0].outputs[0].text
-
-        # Debug: log raw output for first few samples
-        nonlocal debug_count
-        if debug_count < 3:
-            logger.info(f"[DEBUG] Sample {index} raw output: '{raw_output}'")
-            debug_count += 1
-
         return _extract_answer(raw_output, options, answer)
 
 
@@ -279,8 +272,8 @@ def run_infer(args, config: ExperimentConfig):
     logger.info(f"Parameters: max_new_tokens=512, temperature=0.4")
     logger.info(f"Model path: {model_path}")
 
-    # Debug: print first prompt and raw output for first 3 samples
-    debug_count = 0
+    # Debug: log first 3 raw outputs
+    debug_printed = 0
 
     for index, item in enumerate(tqdm(test_data, desc="Inference", unit="img", ncols=100)):
         image_path = image_dir / item["image"]
@@ -290,6 +283,12 @@ def run_infer(args, config: ExperimentConfig):
             item.get("options", []),
             item.get("answer", "")
         )
+
+        # Debug: log first 3 raw outputs
+        if debug_printed < 3:
+            logger.info(f"[DEBUG] Sample {index} raw output: '{output}'")
+            debug_printed += 1
+
         if not output:
             output = "--"
 
