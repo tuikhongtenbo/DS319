@@ -1,31 +1,21 @@
 """
-HuggingFace-native inference for LLaVA.
+HuggingFace Transformers-native inference for LLaVA.
 
-Follows spatial_test_llava.py reference exactly:
-- Uses llava library: load_pretrained_model, conv_templates, tokenizer_image_token
-- Same prompt format, same generation parameters (temperature=0.4, num_beams=1, max_new_tokens=512)
-- Same matching logic for evaluation
+Uses transformers.LlavaForConditionalGeneration + AutoProcessor
+(NOT the standalone llava library which requires old torch==2.1.2).
+
+Same prompt format & generation parameters as spatial_test_llava.py reference.
 """
 
-import os
 import re
 from pathlib import Path
+from typing import List
 
 import torch
 from PIL import Image
 from tqdm import tqdm
 
-from llava.constants import (
-    DEFAULT_IMAGE_TOKEN,
-    DEFAULT_IM_END_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    IMAGE_PLACEHOLDER,
-    IMAGE_TOKEN_INDEX,
-)
-from llava.conversation import conv_templates
-from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
-from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init
+from transformers import AutoProcessor, LlavaForConditionalGeneration
 
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import build_result_record, resolve_test_path
@@ -36,7 +26,7 @@ from ..utils.logging import setup_logger
 logger = setup_logger(__name__)
 
 
-def load_image(image_file):
+def load_image(image_file: str) -> Image.Image:
     """Load image from file path or URL."""
     if str(image_file).startswith("http") or str(image_file).startswith("https"):
         import requests
@@ -44,22 +34,6 @@ def load_image(image_file):
         response = requests.get(str(image_file))
         return Image.open(BytesIO(response.content)).convert("RGB")
     return Image.open(str(image_file)).convert("RGB")
-
-
-def _detect_conv_mode(model_name: str) -> str:
-    """Auto-detect conversation mode from model name, matching the reference."""
-    m = model_name.lower()
-    if "llama-2" in m:
-        return "llava_llama_2"
-    if "mistral" in m:
-        return "mistral_instruct"
-    if "v1.6-34b" in m:
-        return "chatml_direct"
-    if "v1" in m:
-        return "llava_v1"
-    if "mpt" in m:
-        return "mpt"
-    return "llava_v0"
 
 
 def _build_question(question: str, options: list) -> str:
@@ -80,91 +54,33 @@ def _build_question(question: str, options: list) -> str:
     )
 
 
-def eval_model(
-    model, tokenizer, image_processor,
-    question_text: str, image_file: str, conv_mode: str,
-    temperature: float = 0.4, top_p=None, num_beams: int = 1,
-    max_new_tokens: int = 512,
-) -> str:
+def _build_prompt(question_text: str) -> str:
     """
-    Run inference on a single sample, following spatial_test_llava.py eval_model() exactly.
+    Wrap question text into LLaVA-v1.5 chat format.
 
-    Steps:
-    1. Handle IMAGE_PLACEHOLDER / mm_use_im_start_end
-    2. Build conversation via conv_templates
-    3. Process image through image_processor
-    4. Tokenize with tokenizer_image_token
-    5. Generate with model.generate()
-    6. Decode output
+    This replicates what conv_templates["llava_v1"] produces:
+        USER: <image>\n{question}\nASSISTANT:
+
+    Since _build_question already embeds <image> inside the text,
+    we just wrap it with the USER/ASSISTANT format.
     """
-    qs = question_text
-
-    # ── Step 1: Insert image token into the prompt ──────────────────────
-    image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
-    if IMAGE_PLACEHOLDER in qs:
-        if model.config.mm_use_im_start_end:
-            qs = re.sub(IMAGE_PLACEHOLDER, image_token_se, qs)
-        else:
-            qs = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, qs)
-    else:
-        if model.config.mm_use_im_start_end:
-            qs = image_token_se + "\n" + qs
-        else:
-            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
-
-    # ── Step 2: Build conversation prompt ───────────────────────────────
-    conv = conv_templates[conv_mode].copy()
-    conv.append_message(conv.roles[0], qs)
-    conv.append_message(conv.roles[1], None)
-    prompt = conv.get_prompt()
-
-    # ── Step 3: Process image ───────────────────────────────────────────
-    image = load_image(image_file)
-    image_sizes = [image.size]
-    images_tensor = process_images(
-        [image], image_processor, model.config
-    ).to(model.device, dtype=torch.float16)
-
-    # ── Step 4: Tokenize ────────────────────────────────────────────────
-    input_ids = (
-        tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
-        .unsqueeze(0)
-        .cuda()
-    )
-
-    # ── Step 5: Generate ────────────────────────────────────────────────
-    with torch.inference_mode():
-        output_ids = model.generate(
-            input_ids,
-            images=images_tensor,
-            image_sizes=image_sizes,
-            do_sample=True if temperature > 0 else False,
-            temperature=temperature,
-            top_p=top_p,
-            num_beams=num_beams,
-            max_new_tokens=max_new_tokens,
-            use_cache=True,
-        )
-
-    # ── Step 6: Decode ──────────────────────────────────────────────────
-    outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
-    return outputs
+    return f"USER: {question_text}\nASSISTANT:"
 
 
 def run_infer(args, config: ExperimentConfig):
     """
-    Main inference loop matching spatial_test_llava.py structure.
+    Main inference loop using HuggingFace Transformers LLaVA.
     """
     model_path = config.model.model_name_or_path
 
-    # ── Load model (same as reference lines 59-76) ──────────────────────
-    disable_torch_init()
+    logger.info(f"Loading LLaVA model from {model_path} via HuggingFace Transformers...")
 
-    model_name = get_model_name_from_path(model_path)
-    logger.info(f"Loading LLaVA model from {model_path} (name: {model_name})...")
-
-    tokenizer, model, image_processor, context_len = load_pretrained_model(
-        model_path, model_base=None, model_name=model_name
+    # ── Load model and processor ────────────────────────────────────────
+    processor = AutoProcessor.from_pretrained(model_path)
+    model = LlavaForConditionalGeneration.from_pretrained(
+        model_path,
+        torch_dtype=torch.float16,
+        device_map="auto",
     )
 
     # Load LoRA weights if available
@@ -178,17 +94,13 @@ def run_infer(args, config: ExperimentConfig):
 
     model.eval()
 
-    # ── Detect conversation mode ────────────────────────────────────────
-    conv_mode = _detect_conv_mode(model_name)
-    logger.info(f"Using conversation mode: {conv_mode}")
-
     # ── Load dataset ────────────────────────────────────────────────────
     target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
     logger.info(f"Loading test dataset from {target_path}")
     test_data = load_jsonl(str(target_path))
     image_dir = Path(args.image_dir or config.dataset.image_dir)
 
-    # ── Inference parameters (matching reference lines 61-71) ───────────
+    # ── Inference parameters (matching reference) ───────────────────────
     temperature = 0.4
     top_p = None
     num_beams = 1
@@ -212,15 +124,41 @@ def run_infer(args, config: ExperimentConfig):
         # Build question text (same as reference line 163)
         question_text = _build_question(question, options)
 
-        # Run model inference
-        output = eval_model(
-            model, tokenizer, image_processor,
-            question_text, image_filepath, conv_mode,
-            temperature=temperature,
-            top_p=top_p,
-            num_beams=num_beams,
-            max_new_tokens=max_new_tokens,
-        )
+        # Build full prompt with chat format
+        prompt = _build_prompt(question_text)
+
+        # Load and process image
+        try:
+            image = load_image(image_filepath)
+        except Exception as e:
+            logger.warning(f"Failed to load image {image_filepath}: {e}")
+            predictions.append(build_result_record(item, index, "--"))
+            count += 1
+            continue
+
+        # Process inputs through the HF processor
+        inputs = processor(
+            text=prompt,
+            images=image,
+            return_tensors="pt",
+        ).to(model.device)
+
+        # Generate
+        with torch.inference_mode():
+            output_ids = model.generate(
+                **inputs,
+                do_sample=True if temperature > 0 else False,
+                temperature=temperature,
+                top_p=top_p,
+                num_beams=num_beams,
+                max_new_tokens=max_new_tokens,
+                use_cache=True,
+            )
+
+        # Decode — strip the input prompt from the output
+        input_len = inputs["input_ids"].shape[1]
+        generated_ids = output_ids[:, input_len:]
+        output = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
 
         count += 1
 
