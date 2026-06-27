@@ -41,6 +41,7 @@ def parse_args():
     parser.add_argument("--api_key", type=str, default="", help="API key for GPT")
     parser.add_argument("--shots", type=int, default=0, help="Number of shots for API models")
     parser.add_argument("--batch_size", type=int, help="Override batch size")
+    parser.add_argument("--vllm_host", type=str, default=None, help="vLLM server URL (e.g., http://localhost:8000)")
     return parser.parse_args()
 
 

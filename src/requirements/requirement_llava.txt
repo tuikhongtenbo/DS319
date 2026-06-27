@@ -28,14 +28,8 @@ bitsandbytes>=0.43.0
 deepspeed>=0.14.2
 
 # Utilities
-huggingface-hub>=0.21.4
-einops>=0.6.1
-tqdm>=4.66.2
-PyYAML>=6.0.1
+huggingface-hub
+einops
+tqdm
+pyyaml
 
-# LLaVA runtime
-# NOTE: pip builds llava in isolation and torch may be missing there.
-#       If you hit "ModuleNotFoundError: No module named 'torch'" while
-#       installing llava, install torch first and re-run with:
-#           pip install --no-build-isolation llava>=1.2.2.post1
-llava>=1.2.2.post1

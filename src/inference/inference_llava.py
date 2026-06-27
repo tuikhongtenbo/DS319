@@ -1,27 +1,14 @@
 """
-Inference script for LLaVA (liuhaotian/llava-v1.5-7b).
+Inference script for LLaVA using vLLM client.
 Compatible with SpatialMQA evaluation protocol.
 """
 
-import os
-import re
+import base64
+from io import BytesIO
 from pathlib import Path
 
-import torch
 from PIL import Image
 from tqdm import tqdm
-
-from llava.constants import (
-    DEFAULT_IMAGE_TOKEN,
-    DEFAULT_IM_END_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    IMAGE_PLACEHOLDER,
-    IMAGE_TOKEN_INDEX,
-)
-from llava.conversation import conv_templates
-from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
-from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init
 
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import build_result_record, resolve_test_path
@@ -31,135 +18,130 @@ from ..utils.logging import setup_logger
 logger = setup_logger(__name__)
 
 
-def load_image(image_file):
-    if str(image_file).startswith("http") or str(image_file).startswith("https"):
-        import requests
-        from io import BytesIO
-        response = requests.get(str(image_file))
-        return Image.open(BytesIO(response.content)).convert("RGB")
-    return Image.open(str(image_file)).convert("RGB")
+def encode_image_to_base64(image_path: str) -> str:
+    """Encode image to base64 string for API request."""
+    with Image.open(image_path) as img:
+        buffered = BytesIO()
+        img.save(buffered, format=img.format or "JPEG")
+        return base64.b64encode(buffered.getvalue()).decode()
+
+
+def build_spatial_prompt(question: str, options: list) -> str:
+    """Build prompt for spatial reasoning task matching SpatialMQA format."""
+    options_str = "; ".join(options)
+    return (
+        f"You are a spatial reasoning expert. Given an image, a question, and options, "
+        f"choose the correct spatial relation. Answer with ONLY the option (no explanation).\n"
+        f"Question: {question}\n"
+        f"Options: {options_str}\n"
+        f"Answer:"
+    )
 
 
 def run_infer(args, config: ExperimentConfig):
-    disable_torch_init()
+    from vllm import LLM, SamplingParams
+    from openai import OpenAI
 
-    model_path = config.model.model_name_or_path
-    model_name = get_model_name_from_path(model_path)
+    vllm_host = args.vllm_host or "http://localhost:8000"
+    logger.info(f"Connecting to vLLM server at {vllm_host}")
 
-    logger.info(f"Loading LLaVA model from {model_path}...")
-    tokenizer, model, image_processor, context_len = load_pretrained_model(
-        model_path, model_base=None, model_name=model_name
-    )
+    # Connect to vLLM server
+    client = OpenAI(api_key="EMPTY", base_url=f"{vllm_host}/v1")
 
-    if args.out_checkpoint and Path(args.out_checkpoint).exists():
-        lora_path = Path(args.out_checkpoint) / "best_model"
-        if not lora_path.exists():
-            lora_path = Path(args.out_checkpoint) / "saved_model"
-        if lora_path.exists():
-            logger.info(f"Loading LoRA weights from {lora_path}")
-            model.load_adapter(str(lora_path))
-
-    model.eval()
+    # Check server health
+    try:
+        client.models.list()
+        logger.info("Connected to vLLM server successfully")
+    except Exception as e:
+        logger.error(f"Failed to connect to vLLM server: {e}")
+        raise
 
     target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
     logger.info(f"Loading dataset from {target_path}")
     test_data = load_jsonl(str(target_path))
     image_dir = Path(args.image_dir or config.dataset.image_dir)
 
-    # Determine conversation mode
-    if "llama-2" in model_name.lower():
-        conv_mode = "llava_llama_2"
-    elif "mistral" in model_name.lower():
-        conv_mode = "mistral_instruct"
-    elif "v1.6-34b" in model_name.lower():
-        conv_mode = "chatml_direct"
-    elif "v1" in model_name.lower():
-        conv_mode = "llava_v1"
-    elif "mpt" in model_name.lower():
-        conv_mode = "mpt"
-    else:
-        conv_mode = "llava_v0"
-
-    logger.info(f"Using conversation mode: {conv_mode}")
-
     predictions = []
     right_count = 0
-    count = 0
+    total = len(test_data)
 
-    for index, item in enumerate(tqdm(test_data)):
+    # Inference with progress bar showing numbers
+    logger.info("Starting LLaVA inference via vLLM...")
+    for index, item in enumerate(tqdm(test_data, desc="Inference", unit="img")):
         question = item["question"]
         options = item["options"]
         answer = item["answer"]
         image_name = item["image"]
         image_filepath = image_dir / image_name
 
-        # Build prompt matching SpatialMQA format
-        question_text = (
-            "You are currently a senior expert in spatial relation reasoning. \n"
-            " Given an Image, a Question and Options, your task is to answer the "
-            "correct spatial relation. Note that you only need to choose one option "
-            "from the all options without explaining any reason. \n"
-            f" Input: Image: <image>, Question: {question}, Options: {'; '.join(options)}. \n"
-            " Output:"
-        )
+        # Build prompt
+        prompt_text = build_spatial_prompt(question, options)
 
-        image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
-        if IMAGE_PLACEHOLDER in question_text:
-            if model.config.mm_use_im_start_end:
-                question_text = re.sub(IMAGE_PLACEHOLDER, image_token_se, question_text)
-            else:
-                question_text = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, question_text)
-        elif model.config.mm_use_im_start_end:
-            question_text = image_token_se + "\n" + question_text
-        else:
-            question_text = DEFAULT_IMAGE_TOKEN + "\n" + question_text
+        # Encode image
+        try:
+            image_base64 = encode_image_to_base64(str(image_filepath))
+        except Exception as e:
+            logger.warning(f"Failed to load image {image_filepath}: {e}")
+            output = "--"
+            predictions.append(build_result_record(item, index, output))
+            continue
 
-        conv = conv_templates[conv_mode].copy()
-        conv.append_message(conv.roles[0], question_text)
-        conv.append_message(conv.roles[1], None)
-        prompt = conv.get_prompt()
+        # Prepare message for chat API
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt_text},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"},
+                    },
+                ],
+            }
+        ]
 
-        image = load_image(image_filepath)
-        images_tensor = process_images([image], image_processor, model.config)
-        images_tensor = images_tensor.to(model.device, dtype=torch.float16)
-
-        input_ids = (
-            tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
-            .unsqueeze(0)
-            .to(model.device)
-        )
-
-        with torch.inference_mode():
-            output_ids = model.generate(
-                input_ids,
-                images=images_tensor,
-                image_sizes=[image.size],
-                do_sample=False,
+        # Call vLLM API
+        try:
+            response = client.chat.completions.create(
+                model=config.model.model_name_or_path,
+                messages=messages,
+                max_tokens=20,
                 temperature=0.0,
-                top_p=None,
-                num_beams=1,
-                max_new_tokens=20,
-                use_cache=True,
+                stop=["\n", ".", ";"],
             )
-
-        input_len = input_ids.shape[1]
-        generated_ids = output_ids[:, input_len:]
-        output = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-
-        if len(output) == 0:
+            output = response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.warning(f"API error at index {index}: {e}")
             output = "--"
 
-        # Check correctness (matches SpatialMQA logic)
-        output_lower = output.lower()
+        # Post-process output
+        if not output or len(output) == 0:
+            output = "--"
+
+        # Clean output - extract first word/phrase that matches an option
+        output_clean = output.lower().split()[0] if output != "--" else output
+        for opt in options:
+            if opt.lower() in output_clean:
+                output = opt
+                break
+
+        # Check correctness
         is_correct = 0
-        if output_lower in answer.lower() or answer.lower() in output_lower:
+        output_lower = output.lower()
+        answer_lower = answer.lower()
+        if output_lower == answer_lower or answer_lower in output_lower:
             is_correct = 1
             right_count += 1
 
         predictions.append(build_result_record(item, index, output))
-        count += 1
 
-        logger.info(f"Output: {output_lower} | Answer: {answer} | Correct: {right_count}/{count}")
+        # Log progress every 10 items
+        if (index + 1) % 10 == 0 or index == 0:
+            acc = right_count / (index + 1)
+            logger.info(
+                f"[{index + 1}/{total}] Output: '{output}' | Answer: '{answer}' | "
+                f"Correct: {right_count}/{index + 1} ({acc:.2%})"
+            )
 
     # Save results
     out_results = Path(args.out_results) if args.out_results else Path("results")
@@ -167,6 +149,14 @@ def run_infer(args, config: ExperimentConfig):
     out_path = out_results / "predictions.jsonl"
     save_jsonl(predictions, str(out_path))
 
-    accuracy = right_count / count if count > 0 else 0.0
-    logger.info(f"--- LLaVA Final Results ---")
-    logger.info(f"Accuracy: {accuracy:.4f} ({right_count}/{count})")
+    # Final metrics
+    accuracy = right_count / total if total > 0 else 0.0
+    logger.info("=" * 50)
+    logger.info("--- LLaVA (vLLM) Final Results ---")
+    logger.info(f"Total samples: {total}")
+    logger.info(f"Correct: {right_count}/{total}")
+    logger.info(f"Accuracy: {accuracy:.4f} ({accuracy:.2%})")
+    logger.info(f"Results saved to: {out_path}")
+    logger.info("=" * 50)
+
+    return accuracy
