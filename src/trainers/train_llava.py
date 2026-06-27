@@ -53,13 +53,15 @@ def run_train(args, config: ExperimentConfig):
 
     script_path = out_checkpoint / "train_llava.sh"
     script = f"""#!/bin/bash
+set -e
+cd /workspace/LLaVA
 
-deepspeed --include localhost:0 llava/train/train_mem.py \\
+deepspeed --include localhost:0 /workspace/LLaVA/llava/train/train_mem.py \\
     --lora_enable True \\
     --lora_r {config.model.lora_r} \\
     --lora_alpha {config.model.lora_alpha} \\
     --mm_projector_lr 2e-5 \\
-    --deepspeed ./scripts/zero3.json \\
+    --deepspeed /workspace/LLaVA/scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
     --data_path {shlex.quote(str(formatted_data_path))} \\
