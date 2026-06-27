@@ -1,6 +1,7 @@
 """
 Training wrapper for LLaVA (liuhaotian/llava-v1.5-7b).
 Generates a bash script compatible with SpatialMQA / LLaVA training format.
+No DeepSpeed - uses plain torchrun for simplicity and broad compatibility.
 """
 
 import shlex
@@ -42,6 +43,7 @@ def run_train(args, config: ExperimentConfig):
 
     out_checkpoint.mkdir(parents=True, exist_ok=True)
     out_results.mkdir(parents=True, exist_ok=True)
+    _out_results = out_results
 
     data_path = args.jsonl_dir or config.dataset.data_path
     image_dir = args.image_dir or config.dataset.image_dir
@@ -56,12 +58,13 @@ def run_train(args, config: ExperimentConfig):
 set -e
 cd /workspace/LLaVA
 
-deepspeed --include localhost:0 /workspace/LLaVA/llava/train/train_mem.py \\
+# No DeepSpeed - uses plain torchrun for broad compatibility
+torchrun --nproc_per_node=1 --master_port=29500 \\
+    llava/train/train.py \\
     --lora_enable True \\
     --lora_r {config.model.lora_r} \\
     --lora_alpha {config.model.lora_alpha} \\
     --mm_projector_lr 2e-5 \\
-    --deepspeed /workspace/LLaVA/scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
     --data_path {shlex.quote(str(formatted_data_path))} \\
@@ -96,7 +99,7 @@ deepspeed --include localhost:0 /workspace/LLaVA/llava/train/train_mem.py \\
 """
     script_path.write_text(script, encoding="utf-8")
     logger.info("Generated LLaVA training script: %s", script_path)
-    logger.info("Run this script inside the LLaVA repository environment.")
+    logger.info("Run this script from the LLaVA repo directory: cd /workspace/LLaVA && bash %s", script_path)
 
     # After training, load best model and evaluate on test set
     best_model_path = out_checkpoint / "best_model"
@@ -106,18 +109,13 @@ deepspeed --include localhost:0 /workspace/LLaVA/llava/train/train_mem.py \\
 
         class Args:
             out_checkpoint = str(best_model_path)
-            out_results = str(out_results)
+            out_results = str(_out_results)
             jsonl_dir = args.jsonl_dir or config.dataset.data_path
             image_dir = args.image_dir or config.dataset.image_dir
 
         llava_infer(Args(), config)
     else:
         logger.info(
-            "LLaVA training script generated. After training inside LLaVA repo, "
-            "copy the best checkpoint to '%s/best_model' and run inference with: "
-            "python main.py --mode infer --config src/configs/train_llava.yaml "
-            "--out_checkpoint %s --out_results %s",
-            out_checkpoint,
-            out_checkpoint,
-            out_results,
+            "LLaVA training script generated. Run with: cd /workspace/LLaVA && bash %s",
+            script_path,
         )
