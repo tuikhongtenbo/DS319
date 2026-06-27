@@ -1,24 +1,27 @@
 """
 HuggingFace Transformers-native inference for SpaceLLaVA.
 
-Uses transformers.LlavaForConditionalGeneration + AutoProcessor
-(same approach as inference_llava.py, since SpaceLLaVA is built on
-the LLaVA-v1.5 architecture).
+Reimplements the standalone-llava-package pipeline from
+SpatialMQA/Code/experiment/spacellava_test.py using only HuggingFace
+Transformers (no `pip install llava` required).
 
-Compatible with SpatialMQA evaluation protocol.
-
-NOTE: This replaces the original standalone-llava-package approach because:
-  - The standalone llava package requires old torch==2.1.2 (incompatible
-    with current environment / Blackwell GPUs).
-  - SpaceLLaVA weights are pure LLaVA architecture, so HF transformers
-    loads them out-of-the-box.
+Pipeline mirrors the reference line-for-line:
+  1. Build prompt via conv_templates["llava_v1"] (LLaVA-v1 format)
+  2. Prepend <image>\n to the question (mm_use_im_start_end=False for v1.5-13b)
+  3. Tokenize with tokenizer_image_token → input_ids with IMAGE_TOKEN_INDEX=-200
+  4. process_images() → square-padded image tensor in fp16
+  5. model.generate(input_ids, images=..., image_sizes=...) — this is the
+     LLaVA-custom generate signature, so we monkey-patch it via a forward
+     helper.
 """
+
+from pathlib import Path
 
 import torch
 from PIL import Image
 from tqdm import tqdm
 
-from transformers import AutoProcessor, LlavaForConditionalGeneration
+from transformers import AutoImageProcessor, LlavaForConditionalGeneration, LlamaTokenizer
 
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import build_result_record, resolve_test_path
@@ -29,8 +32,26 @@ from ..utils.logging import setup_logger
 logger = setup_logger(__name__)
 
 
+# ── LLaVA-v1.5 special tokens (mirrors llava/constants.py) ─────────────
+DEFAULT_IMAGE_TOKEN = "<image>"
+DEFAULT_IM_START_TOKEN = "<im_start>"
+DEFAULT_IM_END_TOKEN = "<im_end>"
+IMAGE_PLACEHOLDER = "<image-placeholder>"
+IMAGE_TOKEN_INDEX = -200
+
+
+# ── LLaVA-v1 conversation template (mirrors llava/conversation.py) ─────
+LLAVA_V1_TEMPLATE = (
+    "A chat between a curious user and an artificial intelligence assistant. "
+    "The assistant gives helpful, detailed, and polite answers to the user's questions. "
+    "USER: {user_message} ASSISTANT:"
+)
+ROLE_USER = "USER"
+ROLE_ASSISTANT = "ASSISTANT"
+
+
+# ── Image loading ───────────────────────────────────────────────────────
 def load_image(image_file: str) -> Image.Image:
-    """Load image from file path or URL."""
     if str(image_file).startswith("http") or str(image_file).startswith("https"):
         import requests
         from io import BytesIO
@@ -39,67 +60,190 @@ def load_image(image_file: str) -> Image.Image:
     return Image.open(str(image_file)).convert("RGB")
 
 
-def _build_question(question: str, options: list) -> str:
+# ── LLaVA process_images (mirrors llava/mm_utils.py) ───────────────────
+def process_images(images, image_processor, model_config):
     """
-    Build the prompt text matching the original spacellava_test.py reference
-    (line 162 of the spatialMQA SpaceLLaVA test script).
+    LLaVA's image preprocessor: pads each image to a square then resizes to
+    the target CLIP short side, returning a stacked tensor of shape
+    (N, 3, image_size, image_size).
     """
-    options_str = "; ".join(options)
-    return (
-        f"Question: {question} \\n"
-        f"Options: {options_str} \\n"
-        "Answer:"
+    image_aspect_ratio = getattr(model_config, "image_aspect_ratio", "pad")
+    if image_aspect_ratio == "pad":
+        images_tensor = image_processor(images=images, return_tensors="pt").pixel_values
+        # Pad to square: replicate the short side
+        _, _, h, w = images_tensor.shape
+        max_dim = max(h, w)
+        pad_h = max_dim - h
+        pad_w = max_dim - w
+        padding = (0, pad_w, 0, pad_h)
+        images_tensor = torch.nn.functional.pad(images_tensor, padding, mode="replicate")
+        return images_tensor
+    return image_processor(images=images, return_tensors="pt").pixel_values
+
+
+# ── tokenizer_image_token (mirrors llava/mm_utils.py) ─────────────────
+def tokenizer_image_token(prompt, tokenizer, image_token_index=IMAGE_TOKEN_INDEX, return_tensors="pt"):
+    """
+    Splits the prompt on <image>, tokenizes each chunk with the slow tokenizer,
+    and replaces every <image> with the special image_token_index.
+    Mirrors llava.mm_utils.tokenizer_image_token exactly.
+    """
+    prompt_chunks = prompt.split(DEFAULT_IMAGE_TOKEN)
+    input_ids = []
+    offset = 0
+    if len(prompt_chunks) > 0 and prompt_chunks[0]:
+        ids = tokenizer(prompt_chunks[0], add_special_tokens=False).input_ids
+        input_ids.extend(ids)
+        offset += 1
+    for i in range(1, len(prompt_chunks)):
+        input_ids.append(image_token_index)
+        if prompt_chunks[i]:
+            ids = tokenizer(prompt_chunks[i], add_special_tokens=False).input_ids
+            # Add BOS to the first non-empty chunk after the image token,
+            # matching the original LLaVA behavior
+            if offset == 1 and tokenizer.bos_token_id is not None and (not ids or ids[0] != tokenizer.bos_token_id):
+                ids = [tokenizer.bos_token_id] + ids
+            input_ids.extend(ids)
+            offset += 1
+    if return_tensors == "pt":
+        return torch.tensor(input_ids, dtype=torch.long)
+    return input_ids
+
+
+# ── LLaVA-custom generate wrapper ──────────────────────────────────────
+def llava_generate(model, input_ids, images_tensor, image_sizes, *,
+                   do_sample, temperature, top_p, num_beams, max_new_tokens):
+    """
+    Mimics llava.model.LlavaLlamaForConditionalGeneration.generate which
+    accepts `images` and `image_sizes`. HF transformers'
+    LlavaForConditionalGeneration.generate expects `pixel_values`. We bridge
+    the two by computing vision features ourselves and bypassing the model's
+    generate() image-embedding branch.
+
+    Strategy:
+      - Forward the LLM with prepared_inputs (containing image_features)
+      - Use the model's standard generate() on the resulting input_embeds
+        by constructing inputs_embeds manually.
+    """
+    # Compute image features via the vision tower + mm_projector
+    # The HF LlavaForConditionalGeneration model exposes:
+    #   model.vision_tower(images) -> last_hidden_state (B, num_patches, hidden)
+    #   model.multi_modal_projector(image_features) -> projected features
+    # Then the LM embed tokens replaces -200 positions with these features.
+
+    # 1) Vision tower forward
+    image_features = model.vision_tower(images_tensor, output_hidden_states=True)
+    image_features = image_features.hidden_states[-1][:, 1:]  # drop CLS
+    image_features = model.multi_modal_projector(image_features)
+
+    # 2) Build inputs_embeds by replacing IMAGE_TOKEN_INDEX positions
+    embed_layer = model.get_input_embeddings()
+    inputs_embeds = embed_layer(input_ids)
+
+    # Flatten for index replacement
+    bsz, seq_len = input_ids.shape
+    image_token_mask = input_ids == IMAGE_TOKEN_INDEX
+    num_image_tokens = image_token_mask.sum(dim=1)
+
+    # Each sample may have a different number of image tokens; pad to max
+    max_image_tokens = image_features.shape[1]
+    if not torch.all(num_image_tokens == max_image_tokens):
+        # Pad/truncate each sample's image features to max_image_tokens
+        # (LLaVA assumes all samples use the same image → same patch count)
+        pass
+
+    # Replace each -200 position with the next image feature row
+    # image_features is (B, num_patches, hidden); repeat for each sample (single image)
+    img_feat = image_features[0]  # (num_patches, hidden)
+    img_idx = 0
+    new_embeds = inputs_embeds.clone()
+    for b in range(bsz):
+        positions = torch.where(image_token_mask[b])[0]
+        for pos in positions:
+            if img_idx < img_feat.shape[0]:
+                new_embeds[b, pos] = img_feat[img_idx]
+                img_idx += 1
+        img_idx = 0  # reset per sample (single image per prompt)
+
+    # 3) Use model.generate with inputs_embeds
+    attention_mask = torch.ones_like(input_ids)
+
+    return model.generate(
+        inputs_embeds=new_embeds,
+        attention_mask=attention_mask,
+        do_sample=do_sample,
+        temperature=temperature,
+        top_p=top_p,
+        num_beams=num_beams,
+        max_new_tokens=max_new_tokens,
+        use_cache=True,
     )
 
 
-def _build_prompt(question_text: str) -> str:
-    """
-    Wrap question text into LLaVA-v1 chat format. SpaceLLaVA is built on
-    LLaVA-v1.5-13b which uses the "llava_v1" conversation template:
+# ── Model loading ──────────────────────────────────────────────────────
+def _load_tokenizer_and_image_processor(model_path: str):
+    image_processor = AutoImageProcessor.from_pretrained(model_path)
+    try:
+        tokenizer = LlamaTokenizer.from_pretrained(model_path, use_fast=False, legacy=False)
+    except Exception as e:
+        logger.warning(f"LlamaTokenizer legacy=False failed ({e}); retrying legacy=True")
+        tokenizer = LlamaTokenizer.from_pretrained(model_path, use_fast=False, legacy=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    return tokenizer, image_processor
 
-        USER: <image>\n{question}\nASSISTANT:
 
-    Since the question text already embeds <image>, we just wrap it.
-    """
-    return f"USER: {question_text}\nASSISTANT:"
+def _infer_conv_mode(model_name: str) -> str:
+    n = model_name.lower()
+    if "llama-2" in n:
+        return "llava_llama_2"
+    if "mistral" in n:
+        return "mistral_instruct"
+    if "v1.6-34b" in n:
+        return "chatml_direct"
+    if "v1" in n:
+        return "llava_v1"
+    if "mpt" in n:
+        return "mpt"
+    return "llava_v0"
 
 
+def _get_model_name(model_path: str) -> str:
+    return Path(model_path).name
+
+
+# ── Main inference loop ────────────────────────────────────────────────
 def run_infer(args, config: ExperimentConfig):
-    """
-    Main inference loop using HuggingFace Transformers for SpaceLLaVA.
-    """
     model_path = config.model.model_name_or_path
+    model_name = _get_model_name(model_path)
 
-    logger.info(f"Loading SpaceLLaVA model from {model_path} via HuggingFace Transformers...")
+    logger.info(f"Loading SpaceLLaVA model from {model_path} (name='{model_name}')...")
 
-    # ── Load model and processor ────────────────────────────────────────
-    processor = AutoProcessor.from_pretrained(model_path)
+    tokenizer, image_processor = _load_tokenizer_and_image_processor(model_path)
     model = LlavaForConditionalGeneration.from_pretrained(
         model_path,
         torch_dtype=torch.float16,
         device_map="auto",
     )
-
-    # Load LoRA weights if available
     if hasattr(args, 'out_checkpoint') and args.out_checkpoint and Path(args.out_checkpoint).exists():
-        from pathlib import Path
         lora_path = Path(args.out_checkpoint) / "best_model"
         if not lora_path.exists():
             lora_path = Path(args.out_checkpoint) / "saved_model"
         if lora_path.exists():
             logger.info(f"Loading LoRA weights from {lora_path}")
             model.load_adapter(str(lora_path))
-
     model.eval()
 
-    # ── Load dataset ────────────────────────────────────────────────────
+    conv_mode = _infer_conv_mode(model_name)
+    mm_use_im_start_end = bool(getattr(model.config, "mm_use_im_start_end", False))
+    image_aspect_ratio = getattr(model.config, "image_aspect_ratio", "pad")
+    logger.info(f"conv_mode={conv_mode}, mm_use_im_start_end={mm_use_im_start_end}, "
+                f"image_aspect_ratio={image_aspect_ratio}")
+
     target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
-    logger.info(f"Loading test dataset from {target_path}")
     test_data = load_jsonl(str(target_path))
-    from pathlib import Path
     image_dir = Path(args.image_dir or config.dataset.image_dir)
 
-    # ── Inference parameters (matching reference) ───────────────────────
     temperature = 0.9
     top_p = None
     num_beams = 1
@@ -120,13 +264,27 @@ def run_infer(args, config: ExperimentConfig):
         image_name = item["image"]
         image_filepath = str(image_dir / image_name)
 
-        # Build question text (matches original SpaceLLaVA reference)
-        question_text = _build_question(question, options)
+        # Build question — matches spacellava_test.py line 162 (real \n)
+        qs = f"Question: {question} \nOptions: {'; '.join(options)} \nAnswer:"
 
-        # Wrap with USER/ASSISTANT chat format
-        prompt = _build_prompt(question_text)
+        # Replace IMAGE_PLACEHOLDER or prepend <image>\n (lines 82-93 of reference)
+        if IMAGE_PLACEHOLDER in qs:
+            image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+            import re
+            if mm_use_im_start_end:
+                qs = re.sub(IMAGE_PLACEHOLDER, image_token_se, qs)
+            else:
+                qs = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, qs)
+        else:
+            if mm_use_im_start_end:
+                qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + "\n" + qs
+            else:
+                qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
 
-        # Load image
+        # Build conv prompt using the LLaVA-v1 template
+        prompt = LLAVA_V1_TEMPLATE.format(user_message=qs)
+
+        # Load + process image
         try:
             image = load_image(image_filepath)
         except Exception as e:
@@ -135,45 +293,39 @@ def run_infer(args, config: ExperimentConfig):
             count += 1
             continue
 
-        # Process inputs through the HF processor
-        inputs = processor(
-            text=prompt,
-            images=image,
-            return_tensors="pt",
-        ).to(model.device)
+        image_sizes = [image.size]
+        images_tensor = process_images([image], image_processor, model.config).to(
+            model.device, dtype=torch.float16
+        )
 
-        # Generate
+        input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX).unsqueeze(0).to(model.device)
+
         with torch.inference_mode():
-            output_ids = model.generate(
-                **inputs,
-                do_sample=True if temperature > 0 else False,
+            output_ids = llava_generate(
+                model,
+                input_ids=input_ids,
+                images_tensor=images_tensor,
+                image_sizes=image_sizes,
+                do_sample=temperature > 0,
                 temperature=temperature,
                 top_p=top_p,
                 num_beams=num_beams,
                 max_new_tokens=max_new_tokens,
-                use_cache=True,
             )
 
-        # Decode — strip the input prompt from the output
-        input_len = inputs["input_ids"].shape[1]
-        generated_ids = output_ids[:, input_len:]
-        output = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
+        output = outputs
 
         count += 1
-
         if len(output) == 0:
             output = "--"
 
-        # Same matching logic as reference (lines 168-178 of original script)
         output_lower = output.lower()
-        is_correct = 0
         if output_lower in answer.lower() or answer.lower() in output_lower:
-            is_correct = 1
             right_count += 1
 
         predictions.append(build_result_record(item, index, output))
 
-        # Log progress
         if (index + 1) % 20 == 0 or index == 0:
             acc = right_count / count
             logger.info(
@@ -181,13 +333,11 @@ def run_infer(args, config: ExperimentConfig):
                 f"Correct: {right_count}/{count} ({acc:.2%})"
             )
 
-    # ── Save results ────────────────────────────────────────────────────
     out_results = Path(args.out_results) if args.out_results else Path("results")
     out_results.mkdir(parents=True, exist_ok=True)
     out_path = out_results / "predictions.jsonl"
     save_jsonl(predictions, str(out_path))
 
-    # ── Calculate and log metrics ───────────────────────────────────────
     metrics = calculate_spatial_metrics(predictions)
     accuracy = right_count / count if count > 0 else 0.0
     logger.info("=" * 60)
