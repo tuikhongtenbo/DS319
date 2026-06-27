@@ -111,8 +111,8 @@ class VLLMLlavaPredictor:
         self,
         llm,
         conv_mode: str,
-        max_new_tokens: int = 512,  # Same as reference
-        temperature: float = 0.4,    # Same as reference
+        max_new_tokens: int = 512,
+        temperature: float = 0.4,
         top_p: float = None,
         num_beams: int = 1,
     ):
@@ -123,15 +123,41 @@ class VLLMLlavaPredictor:
         self.top_p = top_p
         self.num_beams = num_beams
 
+        # Get tokenizer for chat template
+        self.tokenizer = self.llm.get_tokenizer()
+
     def _build_prompt(self, question: str, options: List[str]) -> str:
-        """Build prompt matching spatial_test_llava.py eval_model() function."""
-        prompt_text = build_spatial_prompt(question, options)
+        """Build prompt with proper chat template for vLLM."""
+        options_str = "; ".join(options)
+        prompt_text = (
+            f'You are currently a senior expert in spatial relation reasoning. \n'
+            f' Given an Image, a Question and Options, your task is to answer the '
+            f'correct spatial relation. Note that you only need to choose one option '
+            f'from the all options without explaining any reason. \n'
+            f' Input: Image: <image>, Question: {question}, Options: {options_str}. \n'
+            f' Output:'
+        )
 
-        # Add <image> token at start (like eval_model does)
-        if IMAGE_PLACEHOLDER not in prompt_text:
-            prompt_text = IMAGE_PLACEHOLDER + "\n" + prompt_text
+        # Build chat messages (no system message, user only)
+        messages = [
+            {"role": "user", "content": [
+                {"type": "image"},
+                {"type": "text", "text": prompt_text}
+            ]}
+        ]
 
-        return prompt_text
+        # Apply chat template
+        try:
+            prompt = self.tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=False,
+            )
+        except Exception as e:
+            logger.warning(f"Chat template failed, using raw prompt: {e}")
+            prompt = "<image>\n" + prompt_text
+
+        return prompt
 
     @torch.no_grad()
     def predict(self, image_path: str, question: str, options: List[str], answer: str) -> str:
@@ -163,6 +189,13 @@ class VLLMLlavaPredictor:
             outputs = self.llm.generate([prompt], sampling_params)
 
         raw_output = outputs[0].outputs[0].text
+
+        # Debug: log raw output for first few samples
+        nonlocal debug_count
+        if debug_count < 3:
+            logger.info(f"[DEBUG] Sample {index} raw output: '{raw_output}'")
+            debug_count += 1
+
         return _extract_answer(raw_output, options, answer)
 
 
@@ -177,19 +210,45 @@ def run_infer(args, config: ExperimentConfig):
     logger.info(f"Loading vLLM LLM for {model_type} inference...")
 
     try:
-        from vllm import LLM
+        from vllm import LLM, LoraConfig
     except ImportError:
         logger.error("vLLM import failed.")
         return
 
+    # Build LLM kwargs
+    llm_kwargs = {
+        "model": model_path,
+        "trust_remote_code": True,
+        "tensor_parallel_size": config.model.tensor_parallel_size,
+        "gpu_memory_utilization": config.model.gpu_memory_utilization,
+        "max_model_len": config.model.max_model_len,
+    }
+
+    # Load LoRA if configured
+    if getattr(config.model, "use_lora", False):
+        lora_path = getattr(args, "lora_path", None)
+        if lora_path is None:
+            output_dir = Path(config.training.output_dir)
+            possible_lora = output_dir / "final"
+            if possible_lora.exists():
+                lora_path = str(possible_lora)
+            else:
+                adapters = list(output_dir.glob("adapter*"))
+                if adapters:
+                    lora_path = str(adapters[0])
+
+        if lora_path:
+            logger.info(f"Loading LoRA adapter from: {lora_path}")
+            lora_config = LoraConfig(
+                lora_r=config.model.lora_r,
+                lora_alpha=config.model.lora_alpha,
+                lora_dropout=0.05,
+            )
+            llm_kwargs["lora_config"] = lora_config
+            llm_kwargs["auto_model_type"] = "causal"
+
     try:
-        llm = LLM(
-            model=model_path,
-            trust_remote_code=True,
-            tensor_parallel_size=config.model.tensor_parallel_size,
-            gpu_memory_utilization=config.model.gpu_memory_utilization,
-            max_model_len=config.model.max_model_len,
-        )
+        llm = LLM(**llm_kwargs)
     except Exception as e:
         logger.error(f"vLLM engine failed to load: {e}")
         return
@@ -218,6 +277,10 @@ def run_infer(args, config: ExperimentConfig):
 
     logger.info(f"Starting vLLM LLaVA inference on {total} samples...")
     logger.info(f"Parameters: max_new_tokens=512, temperature=0.4")
+    logger.info(f"Model path: {model_path}")
+
+    # Debug: print first prompt and raw output for first 3 samples
+    debug_count = 0
 
     for index, item in enumerate(tqdm(test_data, desc="Inference", unit="img", ncols=100)):
         image_path = image_dir / item["image"]
