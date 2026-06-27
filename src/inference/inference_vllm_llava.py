@@ -204,8 +204,10 @@ def run_infer(args, config: ExperimentConfig):
 
     try:
         from vllm import LLM, LoraConfig
-    except ImportError:
-        logger.error("vLLM import failed.")
+    except ImportError as e:
+        logger.error(f"vLLM import failed: {e}")
+        import traceback
+        traceback.print_exc()
         return
 
     # Build LLM kwargs
