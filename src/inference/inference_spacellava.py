@@ -1,21 +1,31 @@
 """
-HuggingFace Transformers-native inference for SpaceLLaVA.
+Inference script for SpaceLLaVA.
+Compatible with SpatialMQA evaluation protocol.
 
-Uses transformers.LlavaForConditionalGeneration + AutoProcessor
-(NOT the standalone llava library which requires old torch==2.1.2).
-
-Prompt format & generation parameters match spacellava_test.py reference.
+Uses the standalone llava library (install with: pip install git+https://github.com/haotian-liu/LLaVA.git --no-deps)
+SpaceLLaVA is NOT compatible with transformers.LlavaForConditionalGeneration
+because it uses the original LLaVA format (based on llava-v1.5-13b).
 """
 
+import os
 import re
 from pathlib import Path
-from typing import List
 
 import torch
 from PIL import Image
 from tqdm import tqdm
 
-from transformers import AutoProcessor, LlavaForConditionalGeneration
+from llava.constants import (
+    DEFAULT_IMAGE_TOKEN,
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    IMAGE_PLACEHOLDER,
+    IMAGE_TOKEN_INDEX,
+)
+from llava.conversation import conv_templates
+from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
+from llava.model.builder import load_pretrained_model
+from llava.utils import disable_torch_init
 
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import build_result_record, resolve_test_path
@@ -26,8 +36,7 @@ from ..utils.logging import setup_logger
 logger = setup_logger(__name__)
 
 
-def load_image(image_file: str) -> Image.Image:
-    """Load image from file path or URL."""
+def load_image(image_file):
     if str(image_file).startswith("http") or str(image_file).startswith("https"):
         import requests
         from io import BytesIO
@@ -36,44 +45,15 @@ def load_image(image_file: str) -> Image.Image:
     return Image.open(str(image_file)).convert("RGB")
 
 
-def _build_question(question: str, options: list) -> str:
-    """
-    Build SpaceLLaVA prompt EXACTLY matching spacellava_test.py line 162.
-
-    Reference: f'Question: {question} \\nOptions: {"; ".join(options)} \\nAnswer:'
-    """
-    options_str = "; ".join(options)
-    return (
-        f'Question: {question} \\n'
-        f'Options: {options_str} \\n'
-        f'Answer:'
-    )
-
-
-def _build_prompt(question_text: str) -> str:
-    """
-    Wrap question text into LLaVA chat format.
-
-    SpaceLLaVA uses the LLaVA-v1 conversation template which produces:
-        USER: <image>\n{question}\nASSISTANT:
-    """
-    return f"USER: <image>\n{question_text}\nASSISTANT:"
-
-
 def run_infer(args, config: ExperimentConfig):
-    """
-    Main inference loop for SpaceLLaVA using HuggingFace Transformers.
-    """
+    disable_torch_init()
+
     model_path = config.model.model_name_or_path
+    model_name = get_model_name_from_path(model_path)
 
-    logger.info(f"Loading SpaceLLaVA model from {model_path} via HuggingFace Transformers...")
-
-    # ── Load model and processor ────────────────────────────────────────
-    processor = AutoProcessor.from_pretrained(model_path)
-    model = LlavaForConditionalGeneration.from_pretrained(
-        model_path,
-        torch_dtype=torch.float16,
-        device_map="auto",
+    logger.info(f"Loading SpaceLLaVA model from {model_path}...")
+    tokenizer, model, image_processor, context_len = load_pretrained_model(
+        model_path, model_base=None, model_name=model_name
     )
 
     # Load LoRA weights if available
@@ -87,14 +67,28 @@ def run_infer(args, config: ExperimentConfig):
 
     model.eval()
 
-    # ── Load dataset ────────────────────────────────────────────────────
     target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
     logger.info(f"Loading dataset from {target_path}")
     test_data = load_jsonl(str(target_path))
     image_dir = Path(args.image_dir or config.dataset.image_dir)
 
-    # ── Inference parameters (matching spacellava_test.py reference) ────
-    # Reference uses temperature=0.9, num_beams=1, max_new_tokens=512
+    # Detect conversation mode
+    if "llama-2" in model_name.lower():
+        conv_mode = "llava_llama_2"
+    elif "mistral" in model_name.lower():
+        conv_mode = "mistral_instruct"
+    elif "v1.6-34b" in model_name.lower():
+        conv_mode = "chatml_direct"
+    elif "v1" in model_name.lower():
+        conv_mode = "llava_v1"
+    elif "mpt" in model_name.lower():
+        conv_mode = "mpt"
+    else:
+        conv_mode = "llava_v0"
+
+    logger.info(f"Using conversation mode: {conv_mode}")
+
+    # Inference parameters matching spacellava_test.py reference
     temperature = 0.9
     top_p = None
     num_beams = 1
@@ -113,34 +107,51 @@ def run_infer(args, config: ExperimentConfig):
         options = item["options"]
         answer = item["answer"]
         image_name = item["image"]
-        image_filepath = str(image_dir / image_name)
+        image_filepath = image_dir / image_name
 
-        # Build question text (same as reference line 162)
-        question_text = _build_question(question, options)
+        # SpaceLLaVA prompt format from spacellava_test.py reference (line 162)
+        question_text = (
+            f"Question: {question} \\n"
+            f"Options: {'; '.join(options)} \\n"
+            "Answer:"
+        )
 
-        # Build full prompt with chat format
-        prompt = _build_prompt(question_text)
+        # Handle IMAGE_PLACEHOLDER (same as reference lines 82-93)
+        image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+        if IMAGE_PLACEHOLDER in question_text:
+            if model.config.mm_use_im_start_end:
+                question_text = re.sub(IMAGE_PLACEHOLDER, image_token_se, question_text)
+            else:
+                question_text = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, question_text)
+        elif model.config.mm_use_im_start_end:
+            question_text = image_token_se + "\n" + question_text
+        else:
+            question_text = DEFAULT_IMAGE_TOKEN + "\n" + question_text
 
-        # Load and process image
-        try:
-            image = load_image(image_filepath)
-        except Exception as e:
-            logger.warning(f"Failed to load image {image_filepath}: {e}")
-            predictions.append(build_result_record(item, index, "--"))
-            count += 1
-            continue
+        # Build conversation prompt
+        conv = conv_templates[conv_mode].copy()
+        conv.append_message(conv.roles[0], question_text)
+        conv.append_message(conv.roles[1], None)
+        prompt = conv.get_prompt()
 
-        # Process inputs through the HF processor
-        inputs = processor(
-            text=prompt,
-            images=image,
-            return_tensors="pt",
-        ).to(model.device)
+        # Process image
+        image = load_image(image_filepath)
+        images_tensor = process_images([image], image_processor, model.config)
+        images_tensor = images_tensor.to(model.device, dtype=torch.float16)
+
+        # Tokenize
+        input_ids = (
+            tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
+            .unsqueeze(0)
+            .to(model.device)
+        )
 
         # Generate
         with torch.inference_mode():
             output_ids = model.generate(
-                **inputs,
+                input_ids,
+                images=images_tensor,
+                image_sizes=[image.size],
                 do_sample=True if temperature > 0 else False,
                 temperature=temperature,
                 top_p=top_p,
@@ -149,17 +160,16 @@ def run_infer(args, config: ExperimentConfig):
                 use_cache=True,
             )
 
-        # Decode — strip the input prompt from the output
-        input_len = inputs["input_ids"].shape[1]
-        generated_ids = output_ids[:, input_len:]
-        output = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        # Decode
+        outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
+        output = outputs
 
         count += 1
 
         if len(output) == 0:
             output = "--"
 
-        # Same matching logic as reference (lines 167-177)
+        # Same matching logic as reference
         output_lower = output.lower()
         is_correct = 0
         if output_lower in answer.lower() or answer.lower() in output_lower:
