@@ -121,9 +121,9 @@ class GeminiOneShotPredictor:
                 if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
                     retry_delay = self._parse_retry_delay(error_str)
                     print(f"Rate limit hit (attempt {attempt+1}/{max_retries}). Waiting {retry_delay:.1f}s...")
-                    time.sleep(retry_delay + 1)  # Add 1s buffer
+                    time.sleep(retry_delay + 0.5)  # Add 0.5s buffer
                 elif attempt < max_retries - 1:
-                    wait_time = (attempt + 1) * 5
+                    wait_time = (attempt + 1) * 3
                     print(f"Error during inference (attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait_time}s...")
                     time.sleep(wait_time)
                 else:
