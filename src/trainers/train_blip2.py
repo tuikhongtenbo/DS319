@@ -135,31 +135,43 @@ def compute_dev_accuracy(
     predictions = []
     raw_data = getattr(valid_dataset, "data", valid_dataset)
 
-    with torch.no_grad():
-        for idx in tqdm(range(len(valid_dataset)), desc="[Dev Accuracy]"):
-            item = raw_data[idx]
-            question = item["question"]
-            image_path = valid_dataset.image_dir / item["image"]
-            image = Image.open(image_path).convert("RGB")
+    with torch.inference_mode():
+        index_batches = range(0, len(valid_dataset), batch_size)
+        for start_idx in tqdm(index_batches, desc="[Dev Accuracy]"):
+            batch_indices = list(range(start_idx, min(start_idx + batch_size, len(valid_dataset))))
+            batch_items = [raw_data[idx] for idx in batch_indices]
+            images = []
+            for item in batch_items:
+                with Image.open(valid_dataset.image_dir / item["image"]) as image:
+                    images.append(image.convert("RGB"))
+            prompts = []
 
-            options = item.get("options", [])
-            if options:
-                options_str = ", ".join(options)
-                prompt = f"Question: {question} Options: {options_str} Answer:"
-            else:
-                prompt = f"Question: {question} Answer:"
+            for item in batch_items:
+                question = item["question"]
+                options = item.get("options", [])
+                if options:
+                    options_str = ", ".join(options)
+                    prompt = f"Question: {question} Options: {options_str} Answer:"
+                else:
+                    prompt = f"Question: {question} Answer:"
+                prompts.append(prompt)
 
-            inputs = processor(images=image, text=prompt, return_tensors="pt").to(device)
+            inputs = processor(
+                images=images,
+                text=prompts,
+                padding=True,
+                return_tensors="pt",
+            ).to(device)
             outputs = model.generate(**inputs, max_new_tokens=20)
             input_len = inputs.input_ids.shape[1]
             generated_ids = outputs[:, input_len:]
-            decoded = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            pred_answer = decoded.strip().rstrip(".")
+            decoded_answers = processor.batch_decode(generated_ids, skip_special_tokens=True)
 
-            if not pred_answer:
-                pred_answer = "--"
-
-            predictions.append(build_result_record(item, idx, pred_answer))
+            for idx, item, decoded in zip(batch_indices, batch_items, decoded_answers):
+                pred_answer = decoded.strip().rstrip(".")
+                if not pred_answer:
+                    pred_answer = "--"
+                predictions.append(build_result_record(item, idx, pred_answer))
 
     metrics = calculate_spatial_metrics(predictions)
     return metrics["accuracy"]
