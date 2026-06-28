@@ -148,18 +148,32 @@ def eval_model(args, question, image_file):
 count = 0
 right_count = 0
 
-# Spatial keywords for parsing
-SPATIAL_KEYWORDS = [
-    'left', 'right', 'above', 'below', 'behind', 'front',
-    'in front of', 'on top of', 'under', 'near', 'between',
-    'nobody', 'everybody', 'somebody'
-]
+# Spatial keyword mapping - normalize model output to match ground truth
+SPATIAL_MAPPING = {
+    'left': ['left', 'left of', 'left-of'],
+    'right': ['right', 'right of', 'right-of'],
+    'above': ['above', 'above/on', 'on/above', 'on top of'],
+    'below': ['below', 'under', 'below/on'],
+    'behind': ['behind', 'in front of'],
+    'front': ['in front of', 'front of'],
+    'nobody': ['nobody', 'no one', 'none'],
+    'everybody': ['everybody', 'everyone'],
+    'somebody': ['somebody', 'someone'],
+}
+
+def normalize_answer(answer: str) -> str:
+    """Normalize answer to standard format"""
+    answer = answer.lower().strip()
+    for key, variants in SPATIAL_MAPPING.items():
+        if answer in variants or any(v in answer for v in variants):
+            return key
+    return answer
 
 def extract_spatial_keyword(output: str) -> str:
-    """Extract first spatial keyword from output"""
+    """Extract first spatial keyword from output and normalize"""
     output_lower = output.lower().strip()
-    for keyword in SPATIAL_KEYWORDS:
-        if keyword in output_lower:
+    for keyword, variants in SPATIAL_MAPPING.items():
+        if keyword in output_lower or any(v in output_lower for v in variants):
             return keyword
     return output_lower.split()[0] if output_lower else output_lower
 
@@ -179,23 +193,25 @@ with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', e
 
         count += 1
 
-        # Extract keyword from output
+        # Extract and normalize keywords
         output_clean = extract_spatial_keyword(output)
-        answer = data['answer'].lower().strip()
+        answer_normalized = normalize_answer(data['answer'])
+        output_normalized = normalize_answer(output_clean)
 
         if len(output_clean) == 0:
             output_clean = '--'
+            output_normalized = '--'
 
-        # Match extracted keyword with answer
-        if output_clean in answer or answer in output_clean:
-            result_json = {'id': id, 'result': 1, "output": output_clean, "answer": answer}
+        # Match using normalized forms
+        if output_normalized == answer_normalized:
+            result_json = {'id': id, 'result': 1, "output": output_clean, "answer": data['answer']}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
             right_count += 1
         else:
-            result_json = {'id': id, 'result': 0, "output": output_clean, "answer": answer}
+            result_json = {'id': id, 'result': 0, "output": output_clean, "answer": data['answer']}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
 
-        print(f'[{count}] Output: {output_clean} | Answer: {answer} | Accuracy: {right_count}/{count} = {right_count / count:.4f}')
+        print(f'[{count}] Output: {output_clean} | Answer: {data["answer"]} | Accuracy: {right_count}/{count} = {right_count / count:.4f}')
 
 accuracy = right_count / count if count > 0 else 0.0
 print(f'\n=================================')
