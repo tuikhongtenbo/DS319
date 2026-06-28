@@ -20,6 +20,10 @@ logger = setup_logger(__name__)
 # Path to the LLaVA repository (cloned via scripts/setup_llava.sh)
 LLAVA_REPO = Path("/workspace/LLaVA")
 
+# Critical: mm_projector_lr MUST be 10x lower than learning_rate
+# This prevents the vision-language projector from training too fast and destroying pretrained weights
+MM_PROJECTOR_LR = 2e-5
+
 
 def convert_to_spacellava_format(data_path: str, output_path: str) -> None:
     path = Path(data_path)
@@ -65,8 +69,9 @@ def run_train(args, config: ExperimentConfig):
 set -e
 cd {shlex.quote(str(LLAVA_REPO))}
 
-deepspeed --include localhost:0 llava/train/train.py \\
+deepspeed --include localhost:0 llava/train/train_mem.py \\
     --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} \\
+    --mm_projector_lr {MM_PROJECTOR_LR} \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
@@ -84,7 +89,7 @@ deepspeed --include localhost:0 llava/train/train.py \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
-    --gradient_accumulation_steps {getattr(config.training, 'gradient_accumulation_steps', 1)} \\
+    --gradient_accumulation_steps 1 \\
     --evaluation_strategy "no" \\
     --save_strategy "steps" \\
     --save_steps 60 \\
@@ -111,6 +116,7 @@ deepspeed --include localhost:0 llava/train/train.py \\
         sys.exit(1)
 
     logger.info("Starting SpaceLLaVA LoRA training via deepspeed...")
+    logger.info("CRITICAL: mm_projector_lr = %s (must be 10x lower than learning_rate)", MM_PROJECTOR_LR)
     result = subprocess.run(
         ["bash", str(script_path.resolve())],
         cwd=str(LLAVA_REPO),
