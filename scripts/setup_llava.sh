@@ -34,7 +34,7 @@ pip install \
   "accelerate==0.27.2" \
   "peft==0.9.0" \
   "bitsandbytes" \
-  "pydantic" \
+  "pydantic==1.10.13" \
   "markdown2[all]" \
   "numpy" \
   "scikit-learn>=1.2.2" \

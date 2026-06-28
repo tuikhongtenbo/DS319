@@ -60,27 +60,6 @@ def run_train(args, config: ExperimentConfig):
 
     saved_model_dir = out_checkpoint / "saved_model"
 
-    # Generate a DeepSpeed ZeRO-2 config
-    ds_config_path = out_checkpoint / "ds_zero2.json"
-    ds_config = {
-        "fp16": {"enabled": "auto"},
-        "bf16": {"enabled": "auto"},
-        "zero_optimization": {
-            "stage": 2,
-            "overlap_comm": True,
-            "contiguous_gradients": True,
-            "reduce_bucket_size": 50000000,
-            "allgather_bucket_size": 50000000,
-        },
-        "gradient_accumulation_steps": "auto",
-        "gradient_clipping": "auto",
-        "steps_per_print": 100,
-        "train_batch_size": "auto",
-        "train_micro_batch_size_per_gpu": "auto",
-        "wall_clock_breakdown": False,
-    }
-    save_json(ds_config, str(ds_config_path))
-
     script_path = out_checkpoint / "train_spacellava.sh"
     script = f"""#!/bin/bash
 set -e
@@ -88,7 +67,7 @@ cd {shlex.quote(str(LLAVA_REPO))}
 
 deepspeed --include localhost:0 llava/train/train.py \\
     --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} \\
-    --deepspeed {shlex.quote(str(ds_config_path.resolve()))} \\
+    --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
     --data_path {shlex.quote(str(formatted_data_path.resolve()))} \\
