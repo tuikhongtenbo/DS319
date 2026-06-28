@@ -169,8 +169,27 @@ def run_api_inference_loop(args, config, predictor, target_data_path):
     logger.info("Starting API inference...")
     for index, item in enumerate(tqdm(test_data)):
         image_path = image_dir / item["image"]
-        output = predictor.predict(str(image_path), item["question"], item.get("options", []))
+
+        # Retry loop for rate limit handling
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                output = predictor.predict(str(image_path), item["question"], item.get("options", []))
+                break
+            except Exception as e:
+                if "rate_limit" in str(e).lower() and attempt < max_retries - 1:
+                    import time
+                    wait_time = (attempt + 1) * 10  # 10, 20, 30, 40 seconds
+                    logger.warning(f"Rate limit hit (attempt {attempt+1}/{max_retries}). Waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"Prediction failed after {max_retries} attempts: {e}")
+                    output = "ERROR"
+
         predictions.append(build_result_record(item, index, output))
+
+        # Print each answer in real-time
+        logger.info(f"[{index+1}/{len(test_data)}] Q: {item['question'][:60]}... | A: {output}")
 
     out_results = Path(args.out_results) if args.out_results else Path("results")
     out_results.mkdir(parents=True, exist_ok=True)
