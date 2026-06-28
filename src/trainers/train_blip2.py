@@ -349,12 +349,15 @@ def run_train(args, config: ExperimentConfig):
         from ..inference.inference_blip2 import run_infer as blip2_infer
 
         class Args:
-            out_checkpoint = str(best_model_path)
-            out_results = str(out_results)
-            jsonl_dir = args.jsonl_dir or config.dataset.data_path
-            image_dir = args.image_dir or config.dataset.image_dir
-            batch_size = args.batch_size or config.training.batch_size
+            pass
 
-        blip2_infer(Args(), config)
+        infer_args = Args()
+        infer_args.out_checkpoint = str(best_model_path)
+        infer_args.out_results = str(out_results)
+        infer_args.jsonl_dir = args.jsonl_dir or config.dataset.data_path
+        infer_args.image_dir = args.image_dir or config.dataset.image_dir
+        infer_args.batch_size = args.batch_size or config.training.batch_size
+
+        blip2_infer(infer_args, config)
     else:
         logger.warning("Best model not found; skipping test evaluation.")
