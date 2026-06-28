@@ -1,18 +1,18 @@
 """
 Training wrapper for LLaVA (liuhaotian/llava-v1.5-7b).
 
-Generates a deepspeed training script matching the reference SpatialMQA
-llava_lora_train.sh, then runs it via subprocess.
-After training, automatically evaluates on the test set.
+Trains epoch-by-epoch via deepspeed, evaluates on dev set after each epoch,
+saves the best model (overwrite), and finally evaluates on test set.
 """
 
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 from ..configs.config import ExperimentConfig
-from ..datasets.preprocessing import get_sample_id, resolve_split_paths
+from ..datasets.preprocessing import get_sample_id, resolve_split_paths, resolve_test_path
 from ..utils.io import load_json, load_jsonl, save_json
 from ..utils.logging import setup_logger
 
@@ -46,36 +46,36 @@ def convert_to_llava_format(data_path: str, output_path: str) -> None:
 
 def _find_latest_checkpoint(output_dir: Path) -> Path | None:
     """Find the latest checkpoint directory inside output_dir."""
+    if not output_dir.exists():
+        return None
     checkpoints = sorted(output_dir.glob("checkpoint-*"), key=lambda p: p.stat().st_mtime, reverse=True)
     if checkpoints:
         return checkpoints[0]
-    # If no checkpoint-* dirs, the output_dir itself may be the model dir
     if (output_dir / "adapter_config.json").exists():
         return output_dir
     return None
 
 
-def run_train(args, config: ExperimentConfig):
-    out_checkpoint = Path(args.out_checkpoint) if args.out_checkpoint else Path(config.training.output_dir)
-    out_results = Path(args.out_results) if args.out_results else out_checkpoint
+def _run_eval(checkpoint_path: Path, eval_data_path: Path, image_dir: str,
+              config: ExperimentConfig, results_dir: Path) -> float:
+    """Run inference on a dataset split and return accuracy."""
+    from ..inference.inference_llava import run_infer as llava_infer
 
-    out_checkpoint.mkdir(parents=True, exist_ok=True)
-    out_results.mkdir(parents=True, exist_ok=True)
+    results_dir.mkdir(parents=True, exist_ok=True)
 
-    data_path = args.jsonl_dir or config.dataset.data_path
-    image_dir = args.image_dir or config.dataset.image_dir
-    train_path, _ = resolve_split_paths(data_path)
-    formatted_data_path = out_results / "llava_train_data.json"
+    class EvalArgs:
+        out_checkpoint = str(checkpoint_path)
+        out_results = str(results_dir)
+        jsonl_dir = str(eval_data_path)  # direct path to dev.jsonl or test.jsonl
+        image_dir_val = image_dir
 
-    logger.info(f"Formatting dataset to LLaVA conversational format: {formatted_data_path}")
-    convert_to_llava_format(str(train_path), str(formatted_data_path))
+    eval_args = EvalArgs()
+    eval_args.image_dir = image_dir
+    return llava_infer(eval_args, config)
 
-    # Build the training script matching reference: llava_lora_train.sh
-    # Uses deepspeed + llava/train/train_mem.py (same as SpatialMQA reference)
-    saved_model_dir = out_checkpoint / "saved_model"
 
-    # Generate a DeepSpeed ZeRO-2 config (better for LoRA + single GPU)
-    # Uses explicit integer values to avoid pydantic v2 float validation errors
+def _generate_ds_config(out_checkpoint: Path) -> Path:
+    """Generate a DeepSpeed ZeRO-2 config (better for LoRA + single GPU)."""
     ds_config_path = out_checkpoint / "ds_zero2.json"
     ds_config = {
         "fp16": {"enabled": "auto"},
@@ -95,8 +95,24 @@ def run_train(args, config: ExperimentConfig):
         "wall_clock_breakdown": False,
     }
     save_json(ds_config, str(ds_config_path))
+    return ds_config_path
 
-    script_path = out_checkpoint / "train_llava.sh"
+
+def _generate_train_script(
+    script_path: Path,
+    ds_config_path: Path,
+    formatted_data_path: Path,
+    image_dir: str,
+    saved_model_dir: Path,
+    config: ExperimentConfig,
+    cumulative_epochs: int,
+    resume_checkpoint: Path | None = None,
+) -> None:
+    """Generate a deepspeed training bash script for a given epoch range."""
+    resume_line = ""
+    if resume_checkpoint is not None:
+        resume_line = f"    --resume_from_checkpoint {shlex.quote(str(resume_checkpoint))} \\\\"
+
     script = f"""#!/bin/bash
 set -e
 cd {shlex.quote(str(LLAVA_REPO))}
@@ -117,13 +133,12 @@ deepspeed --include localhost:0 llava/train/train.py \\
     --group_by_modality_length True \\
     --bf16 {str(config.training.bf16).lower()} \\
     --output_dir {shlex.quote(str(saved_model_dir.resolve()))} \\
-    --num_train_epochs {config.training.num_epochs} \\
+    --num_train_epochs {cumulative_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
     --gradient_accumulation_steps {config.training.cal_num} \\
     --evaluation_strategy "no" \\
-    --save_strategy "steps" \\
-    --save_steps 100 \\
+    --save_strategy "epoch" \\
     --save_total_limit 1 \\
     --learning_rate {config.training.learning_rate} \\
     --weight_decay 0. \\
@@ -134,46 +149,130 @@ deepspeed --include localhost:0 llava/train/train.py \\
     --model_max_length 2048 \\
     --gradient_checkpointing True \\
     --dataloader_num_workers 0 \\
-    --lazy_preprocess True
+    --lazy_preprocess True \\
+{resume_line}
 """
     script_path.write_text(script, encoding="utf-8")
-    logger.info("Generated LLaVA training script: %s", script_path)
 
-    # ── Run the training script ─────────────────────────────────────────
+
+def run_train(args, config: ExperimentConfig):
+    out_checkpoint = Path(args.out_checkpoint) if args.out_checkpoint else Path(config.training.output_dir)
+    out_results = Path(args.out_results) if args.out_results else out_checkpoint
+
+    out_checkpoint.mkdir(parents=True, exist_ok=True)
+    out_results.mkdir(parents=True, exist_ok=True)
+
+    data_path = args.jsonl_dir or config.dataset.data_path
+    image_dir = args.image_dir or config.dataset.image_dir
+    train_path, val_path = resolve_split_paths(data_path)
+    test_path = resolve_test_path(data_path)
+    formatted_data_path = out_results / "llava_train_data.json"
+
+    logger.info(f"Formatting dataset to LLaVA conversational format: {formatted_data_path}")
+    convert_to_llava_format(str(train_path), str(formatted_data_path))
+
+    # Check if dev set exists (val_path != train_path means separate dev.jsonl)
+    has_dev = val_path.exists() and val_path != train_path
+    if has_dev:
+        logger.info(f"Dev set found: {val_path}")
+    else:
+        logger.warning("No separate dev set found. Will skip per-epoch dev evaluation.")
+
+    # ── Setup ───────────────────────────────────────────────────────────
+    saved_model_dir = out_checkpoint / "saved_model"
+    best_model_dir = out_checkpoint / "best_model"
+    ds_config_path = _generate_ds_config(out_checkpoint)
+    script_path = out_checkpoint / "train_llava.sh"
+    num_epochs = config.training.num_epochs
+    patience = config.training.patience
+
     if not LLAVA_REPO.exists():
         logger.error(
-            "LLaVA repo not found at %s. "
-            "Run: bash scripts/setup_llava.sh %s",
+            "LLaVA repo not found at %s. Run: bash scripts/setup_llava.sh %s",
             LLAVA_REPO, LLAVA_REPO,
         )
         sys.exit(1)
 
-    logger.info("Starting LLaVA LoRA training via deepspeed...")
-    result = subprocess.run(
-        ["bash", str(script_path.resolve())],
-        cwd=str(LLAVA_REPO),
-        check=False,
-    )
-    if result.returncode != 0:
-        logger.error("LLaVA training failed with return code %d", result.returncode)
-        sys.exit(result.returncode)
+    # ── Epoch-by-epoch training loop ────────────────────────────────────
+    best_accuracy = -1.0
+    patience_counter = 0
 
-    logger.info("LLaVA training completed successfully!")
+    for epoch in range(1, num_epochs + 1):
+        logger.info("=" * 60)
+        logger.info(f"  EPOCH {epoch}/{num_epochs}")
+        logger.info("=" * 60)
 
-    # ── Find checkpoint and run evaluation ──────────────────────────────
-    checkpoint_path = _find_latest_checkpoint(saved_model_dir)
-    if checkpoint_path is None:
-        logger.warning("No checkpoint found in %s, skipping evaluation.", saved_model_dir)
+        # Find resume checkpoint (for epoch > 1)
+        resume_ckpt = _find_latest_checkpoint(saved_model_dir) if epoch > 1 else None
+
+        # Generate training script for this epoch
+        _generate_train_script(
+            script_path=script_path,
+            ds_config_path=ds_config_path,
+            formatted_data_path=formatted_data_path,
+            image_dir=image_dir,
+            saved_model_dir=saved_model_dir,
+            config=config,
+            cumulative_epochs=epoch,
+            resume_checkpoint=resume_ckpt,
+        )
+
+        # Run training for 1 epoch
+        logger.info(f"Training epoch {epoch} via deepspeed...")
+        result = subprocess.run(
+            ["bash", str(script_path.resolve())],
+            cwd=str(LLAVA_REPO),
+            check=False,
+        )
+        if result.returncode != 0:
+            logger.error("Training failed at epoch %d (return code %d)", epoch, result.returncode)
+            break
+
+        logger.info(f"Epoch {epoch} training completed.")
+
+        # ── Dev evaluation ──────────────────────────────────────────────
+        checkpoint = _find_latest_checkpoint(saved_model_dir)
+        if checkpoint is None:
+            logger.warning("No checkpoint found after epoch %d", epoch)
+            continue
+
+        if has_dev:
+            logger.info(f"Evaluating epoch {epoch} on dev set: {val_path}")
+            dev_results_dir = out_results / f"dev_epoch_{epoch}"
+            accuracy = _run_eval(checkpoint, val_path, image_dir, config, dev_results_dir)
+            logger.info(f"Epoch {epoch} dev accuracy: {accuracy:.4f} (best so far: {best_accuracy:.4f})")
+
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                patience_counter = 0
+                # Save best model (overwrite)
+                if best_model_dir.exists():
+                    shutil.rmtree(best_model_dir)
+                shutil.copytree(str(checkpoint), str(best_model_dir))
+                logger.info(f"★ New best model saved at epoch {epoch}! Accuracy: {accuracy:.4f}")
+            else:
+                patience_counter += 1
+                logger.info(f"No improvement. Patience: {patience_counter}/{patience}")
+                if patience_counter >= patience:
+                    logger.info(f"Early stopping triggered at epoch {epoch}.")
+                    break
+        else:
+            # No dev set: always keep latest as best
+            if best_model_dir.exists():
+                shutil.rmtree(best_model_dir)
+            shutil.copytree(str(checkpoint), str(best_model_dir))
+            logger.info(f"Model checkpoint saved at epoch {epoch} (no dev eval).")
+
+    # ── Final evaluation on test set ────────────────────────────────────
+    final_model = best_model_dir if best_model_dir.exists() else _find_latest_checkpoint(saved_model_dir)
+    if final_model is None:
+        logger.error("No model found for final evaluation.")
         return
 
-    logger.info("Found checkpoint: %s. Running evaluation on test set...", checkpoint_path)
+    logger.info("=" * 60)
+    logger.info("  FINAL EVALUATION ON TEST SET")
+    logger.info("=" * 60)
+    logger.info(f"Using model: {final_model}")
+    logger.info(f"Test data: {test_path}")
 
-    from ..inference.inference_llava import run_infer as llava_infer
-
-    class InferArgs:
-        out_checkpoint = str(checkpoint_path)
-        out_results = str(out_results)
-        jsonl_dir = args.jsonl_dir or config.dataset.data_path
-        image_dir = args.image_dir or config.dataset.image_dir
-
-    llava_infer(InferArgs(), config)
+    _run_eval(final_model, test_path, image_dir, config, out_results)
