@@ -31,8 +31,8 @@ pip install \
   "tokenizers==0.15.1" \
   "sentencepiece==0.1.99" \
   "shortuuid" \
-  "accelerate==0.21.0" \
-  "peft" \
+  "accelerate==0.27.2" \
+  "peft==0.9.0" \
   "bitsandbytes" \
   "pydantic" \
   "markdown2[all]" \
