@@ -1,7 +1,7 @@
 """
 Training wrapper for SpaceLLaVA.
 
-Uses HuggingFace Trainer instead of DeepSpeed for simplicity and stability.
+Uses custom HuggingFace Trainer script without flash attention for stability.
 """
 
 import subprocess
@@ -16,6 +16,7 @@ from ..utils.logging import setup_logger
 logger = setup_logger(__name__)
 
 LLAVA_REPO = Path("/workspace/LLaVA")
+SCRIPT_DIR = Path("/workspace/DS319/scripts")
 
 
 def convert_to_spacellava_format(data_path: str, output_path: str) -> None:
@@ -57,55 +58,31 @@ def run_train(args, config: ExperimentConfig):
 
     saved_model_dir = out_checkpoint / "saved_model"
 
-    script_path = out_checkpoint / "train_spacellava.sh"
-    script = f"""#!/bin/bash
-set -e
-cd {str(LLAVA_REPO)}
+    logger.info("Starting SpaceLLaVA LoRA training with eager attention (no flash attention)...")
 
-python llava/train/train_mem.py \\
-    --lora_enable True \\
-    --lora_r {config.model.lora_r} \\
-    --lora_alpha {config.model.lora_alpha} \\
-    --model_name_or_path {config.model.model_name_or_path} \\
-    --version v1 \\
-    --data_path {formatted_data_path} \\
-    --image_folder {str(Path(image_dir).resolve())} \\
-    --vision_tower openai/clip-vit-large-patch14-336 \\
-    --mm_projector_type mlp2x_gelu \\
-    --mm_vision_select_layer -2 \\
-    --mm_use_im_start_end False \\
-    --mm_use_im_patch_token False \\
-    --image_aspect_ratio pad \\
-    --group_by_modality_length True \\
-    --bf16 {str(config.training.bf16).lower()} \\
-    --output_dir {saved_model_dir} \\
-    --num_train_epochs {config.training.num_epochs} \\
-    --per_device_train_batch_size {config.training.batch_size} \\
-    --per_device_eval_batch_size 4 \\
-    --gradient_accumulation_steps 1 \\
-    --evaluation_strategy "no" \\
-    --save_strategy "steps" \\
-    --save_steps 60 \\
-    --save_total_limit 2 \\
-    --learning_rate {config.training.learning_rate} \\
-    --weight_decay 0. \\
-    --warmup_ratio 0.02 \\
-    --lr_scheduler_type "cosine" \\
-    --logging_steps 1 \\
-    --model_max_length 2048 \\
-    --gradient_checkpointing True \\
-    --dataloader_num_workers 0 \\
-    --lazy_preprocess True
-"""
-    script_path.write_text(script, encoding="utf-8")
-    logger.info("Generated SpaceLLaVA training script: %s", script_path)
+    cmd = [
+        sys.executable,
+        str(SCRIPT_DIR / "train_llava_hf.py"),
+        "--lora_enable", "True",
+        "--lora_r", str(config.model.lora_r),
+        "--lora_alpha", str(config.model.lora_alpha),
+        "--model_name_or_path", config.model.model_name_or_path,
+        "--data_path", str(formatted_data_path.resolve()),
+        "--image_folder", str(Path(image_dir).resolve()),
+        "--bf16", str(config.training.bf16).lower(),
+        "--output_dir", str(saved_model_dir.resolve()),
+        "--num_train_epochs", str(config.training.num_epochs),
+        "--per_device_train_batch_size", str(config.training.batch_size),
+        "--learning_rate", str(config.training.learning_rate),
+        "--weight_decay", str(getattr(config.training, 'weight_decay', 0.0)),
+        "--warmup_ratio", str(getattr(config.training, 'warmup_ratio', 0.02)),
+        "--gradient_checkpointing", "True",
+        "--lazy_preprocess", "True",
+    ]
 
-    if not LLAVA_REPO.exists():
-        logger.error("LLaVA repo not found at %s. Run: bash scripts/setup_llava.sh %s", LLAVA_REPO, LLAVA_REPO)
-        sys.exit(1)
+    logger.info("Running: %s", " ".join(cmd))
+    result = subprocess.run(cmd, check=False)
 
-    logger.info("Starting SpaceLLaVA LoRA training with HuggingFace Trainer...")
-    result = subprocess.run(["bash", str(script_path.resolve())], cwd=str(LLAVA_REPO), check=False)
     if result.returncode != 0:
         logger.error("SpaceLLaVA training failed with return code %d", result.returncode)
         sys.exit(result.returncode)
