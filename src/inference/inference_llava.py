@@ -159,12 +159,8 @@ def run_infer(args, config: ExperimentConfig):
         # ── Build prompt via conv_templates (matching reference lines 82-120) ──
         qs = question_text
         image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
-        if IMAGE_PLACEHOLDER in qs:
-            if model.config.mm_use_im_start_end:
-                qs = re.sub(IMAGE_PLACEHOLDER, image_token_se, qs)
-            else:
-                qs = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, qs)
-        else:
+        # Only add image token at the beginning if <image> placeholder is not already in the text
+        if IMAGE_PLACEHOLDER not in qs:
             if model.config.mm_use_im_start_end:
                 qs = image_token_se + "\n" + qs
             else:
