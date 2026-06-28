@@ -169,6 +169,19 @@ def normalize_answer(answer: str) -> str:
             return key
     return answer
 
+# Mapping from short keyword to full answer format (use most common ground truth format)
+KEYWORD_TO_ANSWER = {
+    'left': 'left of',
+    'right': 'right of',
+    'above': 'above',
+    'below': 'below',
+    'behind': 'behind',
+    'front': 'in front of',
+    'nobody': 'nobody',
+    'everybody': 'nobody',  # not in dataset
+    'somebody': 'nobody',
+}
+
 def extract_spatial_keyword(output: str) -> str:
     """Extract first spatial keyword from output and normalize"""
     output_lower = output.lower().strip()
@@ -191,27 +204,28 @@ with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', e
         qs = question
         output = eval_model(args, qs, image_filepath)
 
-        count += 1
-
         # Extract and normalize keywords
         output_clean = extract_spatial_keyword(output)
         answer_normalized = normalize_answer(data['answer'])
         output_normalized = normalize_answer(output_clean)
 
+        # Map to full answer format
+        output_full = KEYWORD_TO_ANSWER.get(output_normalized, output_clean)
+
         if len(output_clean) == 0:
-            output_clean = '--'
+            output_full = '--'
             output_normalized = '--'
 
         # Match using normalized forms
         if output_normalized == answer_normalized:
-            result_json = {'id': id, 'result': 1, "output": output_clean, "answer": data['answer']}
+            result_json = {'id': id, 'result': 1, "output": output_full, "answer": data['answer']}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
             right_count += 1
         else:
-            result_json = {'id': id, 'result': 0, "output": output_clean, "answer": data['answer']}
+            result_json = {'id': id, 'result': 0, "output": output_full, "answer": data['answer']}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
 
-        print(f'[{count}] Output: {output_clean} | Answer: {data["answer"]} | Accuracy: {right_count}/{count} = {right_count / count:.4f}')
+        print(f'[{count}] Output: {output_full} | Answer: {data["answer"]} | Accuracy: {right_count}/{count} = {right_count / count:.4f}')
 
 accuracy = right_count / count if count > 0 else 0.0
 print(f'\n=================================')
