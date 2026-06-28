@@ -65,8 +65,8 @@ def run_train(args, config: ExperimentConfig):
 set -e
 cd {shlex.quote(str(LLAVA_REPO))}
 
-deepspeed --include localhost:0 llava/train/train.py \\
-    --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} \\
+deepspeed --include localhost:0 llava/train/train_mem.py \\
+    --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} --mm_projector_lr 2e-5 \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
@@ -84,7 +84,7 @@ deepspeed --include localhost:0 llava/train/train.py \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
-    --gradient_accumulation_steps {getattr(config.training, 'gradient_accumulation_steps', 1)} \\
+    --gradient_accumulation_steps {config.training.cal_num} \\
     --evaluation_strategy "no" \\
     --save_strategy "steps" \\
     --save_steps 100 \\
