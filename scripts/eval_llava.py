@@ -1,7 +1,23 @@
+"""
+LLaVA Evaluation Script with LoRA fine-tuned weights.
+
+Based on inference_llava.py patterns with custom eval logic.
+LoRA adapter: outputs/llava_checkpoints/saved_model/checkpoint-2000
+"""
+
 import os
 import argparse
-import torch
+import re
 import json
+from pathlib import Path
+from collections import Counter
+
+import torch
+from PIL import Image
+import requests
+from io import BytesIO
+from tqdm import tqdm
+
 from llava.constants import (
     IMAGE_TOKEN_INDEX,
     DEFAULT_IMAGE_TOKEN,
@@ -9,7 +25,7 @@ from llava.constants import (
     DEFAULT_IM_END_TOKEN,
     IMAGE_PLACEHOLDER,
 )
-from llava.conversation import conv_templates, SeparatorStyle
+from llava.conversation import conv_templates
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
 from llava.mm_utils import (
@@ -17,12 +33,6 @@ from llava.mm_utils import (
     tokenizer_image_token,
     get_model_name_from_path,
 )
-
-from PIL import Image
-
-import requests
-from io import BytesIO
-import re
 
 # ======================================================================
 # PATH CONFIGURATION
@@ -35,92 +45,131 @@ IMAGE_DIR = os.path.join(PROJECT_ROOT, 'data/images/COCO2017/')
 PEFT_MODEL_ID = os.path.join(PROJECT_ROOT, 'outputs/llava_checkpoints/saved_model/checkpoint-2000')
 # ======================================================================
 
+
 def load_image(image_file):
-    if image_file.startswith("http") or image_file.startswith("https"):
+    if str(image_file).startswith("http") or str(image_file).startswith("https"):
         response = requests.get(image_file)
         image = Image.open(BytesIO(response.content)).convert("RGB")
     else:
-        image = Image.open(image_file).convert("RGB")
+        image = Image.open(str(image_file)).convert("RGB")
     return image
 
-def load_images(image_files):
-    out = []
-    for image_file in image_files:
-        image = load_image(image_file)
-        out.append(image)
-    return out
 
-# Model
+def _build_question(question: str, options: list) -> str:
+    """Build the prompt text matching training format."""
+    options_str = "; ".join(options)
+    return (
+        f'You are currently a senior expert in spatial relation reasoning. \\n'
+        f' Given an Image, a Question and Options, your task is to answer the '
+        f'correct spatial relation. Note that you only need to choose one option '
+        f'from the all options without explaining any reason. \\n'
+        f' Input: Image: <image>, Question: {question}, Options: {options_str}. \\n'
+        f' Output:'
+    )
+
+
+# ======================================================================
+# Model Loading
+# ======================================================================
 disable_torch_init()
 model_path = 'liuhaotian/llava-v1.5-7b'
-args = type('Args', (), {
-    "model_path": model_path,
-    "model_base": None,
-    "model_name": get_model_name_from_path(model_path),
-    "conv_mode": None,
-    "sep": ",",
-    "temperature": 0.4,
-    "top_p": None,
-    "num_beams": 1,
-    "max_new_tokens": 8
-})()
-
 model_name = get_model_name_from_path(model_path)
-tokenizer, model, image_processor, context_len = load_pretrained_model(
-    args.model_path, None, model_name
-)
 
+tokenizer, model, image_processor, context_len = load_pretrained_model(
+    model_path, None, model_name
+)
 model.to(torch.bfloat16)
 
-if os.path.exists(PEFT_MODEL_ID):
-    print(f"Loading LoRA weights from {PEFT_MODEL_ID}")
-    model.load_adapter(PEFT_MODEL_ID)
+# Load LoRA adapter
+ckpt_path = Path(PEFT_MODEL_ID)
+if ckpt_path.exists():
+    if not (ckpt_path / "adapter_config.json").exists():
+        # Try saved_model or checkpoint-* subdirs
+        candidates = [
+            ckpt_path / "saved_model",
+            ckpt_path,
+        ]
+        candidates.extend(sorted(ckpt_path.glob("checkpoint-*"), key=lambda p: p.stat().st_mtime, reverse=True))
+        for candidate in candidates:
+            if candidate.exists() and (candidate / "adapter_config.json").exists():
+                peft_model_id = str(candidate)
+                break
+        else:
+            peft_model_id = str(ckpt_path)
+    else:
+        peft_model_id = str(ckpt_path)
+    
+    print(f"Loading LoRA weights from {peft_model_id}")
+    model.load_adapter(peft_model_id)
 else:
-    print(f"[WARNING] Adapter path {PEFT_MODEL_ID} not found. Running with base model.")
+    print(f"[INFO] Adapter path {PEFT_MODEL_ID} not found. Running with BASE model.")
 
-def eval_model(args, question, image_file):
-    qs = question
-    image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
-    if IMAGE_PLACEHOLDER in qs:
-        if model.config.mm_use_im_start_end:
-            qs = re.sub(IMAGE_PLACEHOLDER, image_token_se, qs)
-        else:
-            qs = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, qs)
-    else:
-        if model.config.mm_use_im_start_end:
-            qs = image_token_se + "\n" + qs
-        else:
-            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
+model.eval()
 
+
+# ======================================================================
+# Inference Parameters (matching inference_llava.py)
+# ======================================================================
+TEMPERATURE = 0.0  # greedy for deterministic output
+TOP_P = None
+NUM_BEAMS = 1
+MAX_NEW_TOKENS = 32  # was 8, longer for multi-word answers
+
+# Conv mode inference
+def get_conv_mode():
     if "llama-2" in model_name.lower():
-        conv_mode = "llava_llama_2"
+        return "llava_llama_2"
     elif "mistral" in model_name.lower():
-        conv_mode = "mistral_instruct"
+        return "mistral_instruct"
     elif "v1.6-34b" in model_name.lower():
-        conv_mode = "chatml_direct"
+        return "chatml_direct"
     elif "v1" in model_name.lower():
-        conv_mode = "llava_v1"
+        return "llava_v1"
     elif "mpt" in model_name.lower():
-        conv_mode = "mpt"
+        return "mpt"
     else:
-        conv_mode = "llava_v0"
+        return "llava_v0"
 
-    if args.conv_mode is not None and conv_mode != args.conv_mode:
-        pass
+CONV_MODE = get_conv_mode()
+print(f"Using conv_mode: {CONV_MODE}")
+
+
+def eval_model(question: str, image_file: str) -> str:
+    """Evaluate single sample."""
+    # Build question text
+    question_text = question
+    
+    # Process image token
+    image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+    if IMAGE_PLACEHOLDER in question_text:
+        if model.config.mm_use_im_start_end:
+            qs = re.sub(IMAGE_PLACEHOLDER, image_token_se, question_text)
+        else:
+            qs = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, question_text)
     else:
-        args.conv_mode = conv_mode
+        if model.config.mm_use_im_start_end:
+            qs = image_token_se + "\n" + question_text
+        else:
+            qs = DEFAULT_IMAGE_TOKEN + "\n" + question_text
 
-    conv = conv_templates[args.conv_mode].copy()
+    # Build conversation
+    conv = conv_templates[CONV_MODE].copy()
     conv.append_message(conv.roles[0], qs)
     conv.append_message(conv.roles[1], None)
     prompt = conv.get_prompt()
-    image_files = [image_file]
-    images = load_images(image_files)
-    image_sizes = [x.size for x in images]
+
+    # Load and process image
+    try:
+        image = load_image(image_file)
+    except Exception as e:
+        print(f"Warning: Failed to load image {image_file}: {e}")
+        return "--"
+    
+    image_sizes = [image.size]
     images_tensor = process_images(
-        images,
+        [image],
         image_processor,
-        model.config
+        model.config,
     ).to(model.device, dtype=torch.bfloat16)
 
     input_ids = (
@@ -134,132 +183,121 @@ def eval_model(args, question, image_file):
             input_ids,
             images=images_tensor,
             image_sizes=image_sizes,
-            do_sample=True if args.temperature > 0 else False,
-            temperature=args.temperature,
-            top_p=args.top_p,
-            num_beams=args.num_beams,
-            max_new_tokens=args.max_new_tokens,
+            do_sample=True if TEMPERATURE > 0 else False,
+            temperature=TEMPERATURE,
+            top_p=TOP_P,
+            num_beams=NUM_BEAMS,
+            max_new_tokens=MAX_NEW_TOKENS,
             use_cache=True,
         )
 
-    outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
-    return outputs
+    output = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
+    return output
 
-count = 0
-right_count = 0
 
-# Axis groups for metrics
-AXIS_GROUPS = {
-    'x': ['left of', 'right of'],
-    'y': ['on/above', 'below'],
-    'z': ['in front of', 'behind'],
-}
-
-# Accuracies per axis
-axis_correct = {'x': 0, 'y': 0, 'z': 0}
-axis_total = {'x': 0, 'y': 0, 'z': 0}
-
-# Spatial keyword mapping - normalize model output to match ground truth
+# ======================================================================
+# Answer Normalization
+# ======================================================================
 SPATIAL_MAPPING = {
-    'left': ['left', 'left of', 'left-of'],
-    'right': ['right', 'right of', 'right-of'],
-    'above': ['above', 'above/on', 'on/above', 'on top of'],
-    'below': ['below', 'under', 'below/on'],
-    'behind': ['behind', 'in front of'],
-    'front': ['in front of', 'front of'],
-    'nobody': ['nobody', 'no one', 'none'],
-    'everybody': ['everybody', 'everyone'],
-    'somebody': ['somebody', 'someone'],
+    'left of': ['left', 'left of', 'left-of'],
+    'right of': ['right', 'right of', 'right-of'],
+    'on/above': ['above', 'on/above', 'above/on', 'on top of'],
+    'below': ['below', 'under'],
+    'behind': ['behind', 'in back of'],
+    'in front of': ['in front of', 'front of', 'front'],
 }
+
 
 def normalize_answer(answer: str) -> str:
-    """Normalize answer to standard format"""
+    """Normalize answer to standard format."""
     answer = answer.lower().strip()
     for key, variants in SPATIAL_MAPPING.items():
         if answer in variants or any(v in answer for v in variants):
             return key
     return answer
 
-# Mapping from short keyword to full answer format (use most common ground truth format)
-KEYWORD_TO_ANSWER = {
-    'left': 'left of',
-    'right': 'right of',
-    'above': 'on/above',
-    'below': 'below',
-    'behind': 'behind',
-    'front': 'in front of',
-    'nobody': 'nobody',
-    'everybody': 'nobody',  # not in dataset
-    'somebody': 'nobody',
-}
 
 def extract_spatial_keyword(output: str) -> str:
-    """Extract first spatial keyword from output and normalize"""
+    """Extract first spatial keyword from output."""
     output_lower = output.lower().strip()
-    for keyword, variants in SPATIAL_MAPPING.items():
-        if keyword in output_lower or any(v in output_lower for v in variants):
-            return keyword
+    for key, variants in SPATIAL_MAPPING.items():
+        if any(v in output_lower for v in variants):
+            return key
     return output_lower.split()[0] if output_lower else output_lower
 
+
+# ======================================================================
+# Evaluation
+# ======================================================================
+print(f"\n{'='*60}")
+print(f"LLaVA Evaluation")
+print(f"Model: {model_path}")
+print(f"LoRA: {PEFT_MODEL_ID if os.path.exists(PEFT_MODEL_ID) else 'BASE MODEL'}")
+print(f"{'='*60}\n")
+
 os.makedirs(os.path.dirname(RESULT_FILE_PATH), exist_ok=True)
-with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', encoding="utf-8") as fout:
-    for line in f:
-        data = json.loads(line)
-        question = data['question']
-        id = data.get('id', count)
-        options = data['options']
-        image_name = data['image']
+
+count = 0
+right_count = 0
+output_distribution = Counter()
+
+with open(FILE_PATH, 'r', encoding="utf-8") as f:
+    test_data = [json.loads(line) for line in f]
+
+with open(RESULT_FILE_PATH, 'w+', encoding="utf-8") as fout:
+    for item in tqdm(test_data, desc="Evaluating", unit="img", ncols=100):
+        question = item['question']
+        options = item['options']
+        answer = item['answer']
+        image_name = item['image']
         image_filepath = os.path.join(IMAGE_DIR, image_name)
+        sample_id = item.get('id', count)
 
-        # Match the training format exactly: just the raw question
-        qs = question
-        output = eval_model(args, qs, image_filepath)
-
-        # Extract and normalize keywords
-        output_clean = extract_spatial_keyword(output)
-        answer_normalized = normalize_answer(data['answer'])
-        output_normalized = normalize_answer(output_clean)
-
-        # Map to full answer format
-        output_full = KEYWORD_TO_ANSWER.get(output_normalized, output_clean)
-
-        if len(output_clean) == 0:
-            output_full = '--'
+        # Run inference
+        output = eval_model(question, image_filepath)
+        
+        # Extract and normalize
+        output_normalized = extract_spatial_keyword(output)
+        answer_normalized = normalize_answer(answer)
+        
+        if not output_normalized:
             output_normalized = '--'
 
         count += 1
+        output_distribution[output_normalized] += 1
 
-        # Match using normalized forms
+        # Check correctness
         is_correct = output_normalized == answer_normalized
         if is_correct:
-            result_json = {'id': id, 'result': 1, "output": output_full, "answer": data['answer']}
-            fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
             right_count += 1
-        else:
-            result_json = {'id': id, 'result': 0, "output": output_full, "answer": data['answer']}
-            fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
 
-        # Update axis metrics
-        for axis, relations in AXIS_GROUPS.items():
-            if answer_normalized in relations:
-                axis_total[axis] += 1
-                if is_correct:
-                    axis_correct[axis] += 1
-                break
+        # Write result
+        result_json = {
+            'id': sample_id,
+            'result': 1 if is_correct else 0,
+            'output': output_normalized,
+            'answer': answer
+        }
+        fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
 
-        acc = right_count / count if count > 0 else 0.0
-        ax = axis_correct['x'] / axis_total['x'] if axis_total['x'] > 0 else 0.0
-        ay = axis_correct['y'] / axis_total['y'] if axis_total['y'] > 0 else 0.0
-        az = axis_correct['z'] / axis_total['z'] if axis_total['z'] > 0 else 0.0
-        print(f'[{count}] Output: {output_full} | Answer: {data["answer"]} | Acc:{right_count}/{count}={acc:.4f} | Ax:{axis_correct["x"]}/{axis_total["x"]}={ax:.2f} Ay:{axis_correct["y"]}/{axis_total["y"]}={ay:.2f} Az:{axis_correct["z"]}/{axis_total["z"]}={az:.2f}')
+        # Progress log every 50 samples
+        if count % 50 == 0:
+            acc = right_count / count
+            print(f"[{count}] Acc: {right_count}/{count} = {acc:.4f}")
 
+# ======================================================================
+# Final Results
+# ======================================================================
 accuracy = right_count / count if count > 0 else 0.0
-ax = axis_correct['x'] / axis_total['x'] if axis_total['x'] > 0 else 0.0
-ay = axis_correct['y'] / axis_total['y'] if axis_total['y'] > 0 else 0.0
-az = axis_correct['z'] / axis_total['z'] if axis_total['z'] > 0 else 0.0
-print(f'\n=================================')
-print(f'Final LLaVA Accuracy: {accuracy:.4f}')
-print(f'Ax (left/right): {axis_correct["x"]}/{axis_total["x"]} = {ax:.4f}')
-print(f'Ay (above/below): {axis_correct["y"]}/{axis_total["y"]} = {ay:.4f}')
-print(f'Az (front/behind): {axis_correct["z"]}/{axis_total["z"]} = {az:.4f}')
-print(f'=================================')
+
+print(f"\n{'='*60}")
+print(f"Final Results")
+print(f"{'='*60}")
+print(f"Total samples: {count}")
+print(f"Correct: {right_count}/{count}")
+print(f"Accuracy: {accuracy:.4f}")
+print(f"\nOutput distribution:")
+for label, cnt in output_distribution.most_common():
+    pct = cnt / count * 100
+    print(f"  {label}: {cnt} ({pct:.1f}%)")
+print(f"{'='*60}")

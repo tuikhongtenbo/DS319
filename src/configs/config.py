@@ -35,13 +35,15 @@ class DatasetConfig:
 @dataclass
 class TrainingConfig:
     output_dir: str
-    num_epochs: int = 30
+    num_epochs: int = 1  # was 30, too many -> mode collapse
     batch_size: int = 8
-    learning_rate: float = 4e-5
+    learning_rate: float = 2e-5  # was 4e-5, lower LR for stability
     patience: int = 5
     seed: int = 42
     cal_num: int = 2
     bf16: bool = True
+    warmup_ratio: float = 0.03  # was 0.02
+    weight_decay: float = 0.01  # add regularization
 
 @dataclass
 class ExperimentConfig:

@@ -86,12 +86,11 @@ deepspeed --include localhost:0 llava/train/train.py \\
     --per_device_eval_batch_size 4 \\
     --gradient_accumulation_steps {config.training.cal_num} \\
     --evaluation_strategy "no" \\
-    --save_strategy "steps" \\
-    --save_steps 1000 \\
+    --save_steps 500 \\
     --save_total_limit 2 \\
     --learning_rate {config.training.learning_rate} \\
-    --weight_decay 0. \\
-    --warmup_ratio 0.02 \\
+    --weight_decay {getattr(config.training, "weight_decay", 0.01)} \\
+    --warmup_ratio {getattr(config.training, "warmup_ratio", 0.03)} \\
     --lr_scheduler_type "cosine" \\
     --logging_steps 2 \\
     --tf32 True \\
