@@ -148,6 +148,17 @@ def eval_model(args, question, image_file):
 count = 0
 right_count = 0
 
+# Axis groups for metrics
+AXIS_GROUPS = {
+    'x': ['left of', 'right of'],
+    'y': ['on/above', 'below'],
+    'z': ['in front of', 'behind'],
+}
+
+# Accuracies per axis
+axis_correct = {'x': 0, 'y': 0, 'z': 0}
+axis_total = {'x': 0, 'y': 0, 'z': 0}
+
 # Spatial keyword mapping - normalize model output to match ground truth
 SPATIAL_MAPPING = {
     'left': ['left', 'left of', 'left-of'],
@@ -173,7 +184,7 @@ def normalize_answer(answer: str) -> str:
 KEYWORD_TO_ANSWER = {
     'left': 'left of',
     'right': 'right of',
-    'above': 'above',
+    'above': 'on/above',
     'below': 'below',
     'behind': 'behind',
     'front': 'in front of',
@@ -216,8 +227,11 @@ with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', e
             output_full = '--'
             output_normalized = '--'
 
+        count += 1
+
         # Match using normalized forms
-        if output_normalized == answer_normalized:
+        is_correct = output_normalized == answer_normalized
+        if is_correct:
             result_json = {'id': id, 'result': 1, "output": output_full, "answer": data['answer']}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
             right_count += 1
@@ -225,9 +239,27 @@ with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', e
             result_json = {'id': id, 'result': 0, "output": output_full, "answer": data['answer']}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
 
-        print(f'[{count}] Output: {output_full} | Answer: {data["answer"]} | Accuracy: {right_count}/{count} = {right_count / count:.4f}')
+        # Update axis metrics
+        for axis, relations in AXIS_GROUPS.items():
+            if answer_normalized in relations:
+                axis_total[axis] += 1
+                if is_correct:
+                    axis_correct[axis] += 1
+                break
+
+        acc = right_count / count if count > 0 else 0.0
+        ax = axis_correct['x'] / axis_total['x'] if axis_total['x'] > 0 else 0.0
+        ay = axis_correct['y'] / axis_total['y'] if axis_total['y'] > 0 else 0.0
+        az = axis_correct['z'] / axis_total['z'] if axis_total['z'] > 0 else 0.0
+        print(f'[{count}] Output: {output_full} | Answer: {data["answer"]} | Acc:{right_count}/{count}={acc:.4f} | Ax:{axis_correct["x"]}/{axis_total["x"]}={ax:.2f} Ay:{axis_correct["y"]}/{axis_total["y"]}={ay:.2f} Az:{axis_correct["z"]}/{axis_total["z"]}={az:.2f}')
 
 accuracy = right_count / count if count > 0 else 0.0
+ax = axis_correct['x'] / axis_total['x'] if axis_total['x'] > 0 else 0.0
+ay = axis_correct['y'] / axis_total['y'] if axis_total['y'] > 0 else 0.0
+az = axis_correct['z'] / axis_total['z'] if axis_total['z'] > 0 else 0.0
 print(f'\n=================================')
 print(f'Final LLaVA Accuracy: {accuracy:.4f}')
+print(f'Ax (left/right): {axis_correct["x"]}/{axis_total["x"]} = {ax:.4f}')
+print(f'Ay (above/below): {axis_correct["y"]}/{axis_total["y"]} = {ay:.4f}')
+print(f'Az (front/behind): {axis_correct["z"]}/{axis_total["z"]} = {az:.4f}')
 print(f'=================================')
