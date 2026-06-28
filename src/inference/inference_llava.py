@@ -51,20 +51,14 @@ def load_image(image_file: str) -> Image.Image:
 
 def _build_question(question: str, options: list) -> str:
     """
-    Build the prompt text matching spatial_test_llava_lora.py line 165.
+    Build question text matching the TRAINING format exactly.
 
-    Uses literal \\n inside the f-string (producing the two-character
-    sequence backslash-n in the final string), matching the reference.
+    During training (train_llava.py), data is formatted as:
+        {"from": "human", "value": "<image>\n{question}"}
+    So inference must use the same raw question (no zero-shot prompt).
+    The <image> token is added separately by the caller.
     """
-    options_str = "; ".join(options)
-    return (
-        f'You are currently a senior expert in spatial relation reasoning. \\n'
-        f' Given an Image, a Question and Options, your task is to answer the '
-        f'correct spatial relation. Note that you only need to choose one option '
-        f'from the all options without explaining any reason. \\n'
-        f' Input: Image: <image>, Question: {question}, Options: {options_str}. \\n'
-        f' Output:'
-    )
+    return question
 
 
 def run_infer(args, config: ExperimentConfig):
@@ -133,10 +127,10 @@ def run_infer(args, config: ExperimentConfig):
     image_dir = Path(args.image_dir or config.dataset.image_dir)
 
     # ── Inference parameters (matching reference line 67-70) ────────────
-    temperature = 0.4
+    temperature = 0.0
     top_p = None
     num_beams = 1
-    max_new_tokens = 512
+    max_new_tokens = 20
 
     predictions = []
     right_count = 0
@@ -185,7 +179,7 @@ def run_infer(args, config: ExperimentConfig):
             [image],
             image_processor,
             model.config,
-        ).to(model.device, dtype=torch.float16)
+        ).to(model.device, dtype=torch.bfloat16)
 
         input_ids = (
             tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
