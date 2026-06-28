@@ -67,7 +67,6 @@ cd {shlex.quote(str(LLAVA_REPO))}
 
 deepspeed --include localhost:0 llava/train/train_mem.py \\
     --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} \\
-    --mm_projector_lr {getattr(config.model, 'mm_projector_lr', 2e-5)} \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\

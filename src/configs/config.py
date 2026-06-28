@@ -25,8 +25,6 @@ class ModelConfig:
     lora_alpha: int = 32
     lora_dropout: float = 0.05
     lora_target_modules: List[str] = field(default_factory=lambda: ["q_proj", "k_proj", "v_proj"])
-    # Vision-language projector LR (CRITICAL for multimodal training)
-    mm_projector_lr: float = 2e-5
 
 @dataclass
 class DatasetConfig:
