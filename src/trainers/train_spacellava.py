@@ -1,11 +1,9 @@
 """
 Training wrapper for SpaceLLaVA.
 
-Generates a deepspeed training script matching the reference SpatialMQA
-spacellava_lora_train.sh, then runs it via subprocess.
+Uses HuggingFace Trainer instead of DeepSpeed for simplicity and stability.
 """
 
-import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -17,12 +15,7 @@ from ..utils.logging import setup_logger
 
 logger = setup_logger(__name__)
 
-# Path to the LLaVA repository (cloned via scripts/setup_llava.sh)
 LLAVA_REPO = Path("/workspace/LLaVA")
-
-# Critical: mm_projector_lr MUST be 10x lower than learning_rate
-# This prevents the vision-language projector from training too fast and destroying pretrained weights
-MM_PROJECTOR_LR = 2e-5
 
 
 def convert_to_spacellava_format(data_path: str, output_path: str) -> None:
@@ -67,16 +60,16 @@ def run_train(args, config: ExperimentConfig):
     script_path = out_checkpoint / "train_spacellava.sh"
     script = f"""#!/bin/bash
 set -e
-cd {shlex.quote(str(LLAVA_REPO))}
+cd {str(LLAVA_REPO)}
 
-deepspeed --include localhost:0 llava/train/train_mem.py \\
-    --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} \\
-    --mm_projector_lr {MM_PROJECTOR_LR} \\
-    --deepspeed ./scripts/zero3.json \\
+python llava/train/train_mem.py \\
+    --lora_enable True \\
+    --lora_r {config.model.lora_r} \\
+    --lora_alpha {config.model.lora_alpha} \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
-    --data_path {shlex.quote(str(formatted_data_path.resolve()))} \\
-    --image_folder {shlex.quote(str(Path(image_dir).resolve()))} \\
+    --data_path {formatted_data_path} \\
+    --image_folder {str(Path(image_dir).resolve())} \\
     --vision_tower openai/clip-vit-large-patch14-336 \\
     --mm_projector_type mlp2x_gelu \\
     --mm_vision_select_layer -2 \\
@@ -85,7 +78,7 @@ deepspeed --include localhost:0 llava/train/train_mem.py \\
     --image_aspect_ratio pad \\
     --group_by_modality_length True \\
     --bf16 {str(config.training.bf16).lower()} \\
-    --output_dir {shlex.quote(str(saved_model_dir.resolve()))} \\
+    --output_dir {saved_model_dir} \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
@@ -99,7 +92,6 @@ deepspeed --include localhost:0 llava/train/train_mem.py \\
     --warmup_ratio 0.02 \\
     --lr_scheduler_type "cosine" \\
     --logging_steps 1 \\
-    --tf32 True \\
     --model_max_length 2048 \\
     --gradient_checkpointing True \\
     --dataloader_num_workers 0 \\
@@ -109,19 +101,11 @@ deepspeed --include localhost:0 llava/train/train_mem.py \\
     logger.info("Generated SpaceLLaVA training script: %s", script_path)
 
     if not LLAVA_REPO.exists():
-        logger.error(
-            "LLaVA repo not found at %s. Run: bash scripts/setup_llava.sh %s",
-            LLAVA_REPO, LLAVA_REPO,
-        )
+        logger.error("LLaVA repo not found at %s. Run: bash scripts/setup_llava.sh %s", LLAVA_REPO, LLAVA_REPO)
         sys.exit(1)
 
-    logger.info("Starting SpaceLLaVA LoRA training via deepspeed...")
-    logger.info("CRITICAL: mm_projector_lr = %s (must be 10x lower than learning_rate)", MM_PROJECTOR_LR)
-    result = subprocess.run(
-        ["bash", str(script_path.resolve())],
-        cwd=str(LLAVA_REPO),
-        check=False,
-    )
+    logger.info("Starting SpaceLLaVA LoRA training with HuggingFace Trainer...")
+    result = subprocess.run(["bash", str(script_path.resolve())], cwd=str(LLAVA_REPO), check=False)
     if result.returncode != 0:
         logger.error("SpaceLLaVA training failed with return code %d", result.returncode)
         sys.exit(result.returncode)
