@@ -82,6 +82,13 @@ def build_blip_prompt(question: str, options: List[str]) -> str:
     return f"{question} {joined} or {options[-1]}"
 
 
+def build_blip2_prompt(question: str, options: List[str]) -> str:
+    """Prompt format used consistently for BLIP-2 fine-tuning and inference."""
+    if options:
+        options_str = ", ".join(options)
+        return f"Question: {question} Options: {options_str} Answer:"
+    return f"Question: {question} Answer:"
+
 def build_spacellava_prompt(question: str, options: List[str]) -> str:
     """SpaceLLaVA zero-shot prompt from the original repo."""
     options_str = "; ".join(options)

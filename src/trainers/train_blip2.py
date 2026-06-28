@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 
 import torch
-import torch.nn as nn
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -16,9 +15,9 @@ from transformers import Blip2ForConditionalGeneration, Blip2Processor, BitsAndB
 
 from ..configs.config import ExperimentConfig
 from ..datasets.collator import Blip2Collator
-from ..datasets.preprocessing import build_result_record, resolve_split_paths, resolve_test_path
+from ..datasets.preprocessing import build_blip2_prompt, build_result_record, resolve_split_paths
 from ..metrics.metrics import calculate_spatial_metrics
-from ..utils.io import load_json, load_jsonl, save_jsonl
+from ..utils.io import load_json, load_jsonl
 from ..utils.logging import setup_logger
 from ..utils.seed import set_seed
 
@@ -53,11 +52,13 @@ class ImageCaptioningDataset(Dataset):
     def __getitem__(self, idx: int):
         item = self.data[idx]
         question = item["question"]
+        options = item.get("options", [])
+        prompt = build_blip2_prompt(question, options)
         answer = str(item["answer"])
         image_path = self.image_dir / item["image"]
         image = Image.open(image_path).convert("RGB")
 
-        encoding = self.processor(images=image, text=question, return_tensors="pt")
+        encoding = self.processor(images=image, text=prompt, return_tensors="pt")
         labels = self.processor.tokenizer(
             answer, return_tensors="pt", add_special_tokens=False
         ).input_ids
@@ -75,7 +76,6 @@ def compute_blip2_loss(
     model,
     batch: dict,
     device: torch.device,
-    criterion: nn.Module,
     bf16: bool = True,
 ) -> torch.Tensor:
     input_ids = batch.pop("input_ids").to(device)
@@ -85,29 +85,20 @@ def compute_blip2_loss(
 
     dtype = torch.bfloat16 if bf16 else torch.float16
     with torch.amp.autocast(device_type="cuda", dtype=dtype):
-        logits = model(
+        outputs = model(
             input_ids=input_ids,
             pixel_values=pixel_values,
             attention_mask=attention_mask,
-        ).logits
+            labels=labels,
+        )
 
-    # Logits seq-len matches input_ids (encoder output), not labels (decoder target).
-    # Only the last |labels| positions correspond to the decoder targets.
-    # Slice logits accordingly so shapes align for cross_entropy.
-    label_len = labels.shape[1]
-    logits_sliced = logits[:, -label_len:, :].contiguous()
-
-    return criterion(
-        logits_sliced.view(-1, logits_sliced.shape[-1]).contiguous(),
-        labels.view(-1).contiguous(),
-    )
+    return outputs.loss
 
 
 def compute_eval_loss(
     model,
     dataloader,
     device,
-    criterion,
     bf16: bool = True,
 ) -> float:
     model.eval()
@@ -116,7 +107,7 @@ def compute_eval_loss(
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="[Valid]"):
             batch_copy = {key: value.clone() for key, value in batch.items()}
-            loss = compute_blip2_loss(model, batch_copy, device, criterion, bf16=bf16)
+            loss = compute_blip2_loss(model, batch_copy, device, bf16=bf16)
             eval_loss += loss.item()
 
     return eval_loss / len(dataloader)
@@ -150,18 +141,10 @@ def compute_dev_accuracy(
                 for item in batch_items:
                     with Image.open(valid_dataset.image_dir / item["image"]) as image:
                         images.append(image.convert("RGB"))
-                prompts = []
-
-                for item in batch_items:
-                    question = item["question"]
-                    options = item.get("options", [])
-                    if options:
-                        options_str = ", ".join(options)
-                        prompt = f"Question: {question} Options: {options_str} Answer:"
-                    else:
-                        prompt = f"Question: {question} Answer:"
-                    prompts.append(prompt)
-
+                prompts = [
+                    build_blip2_prompt(item["question"], item.get("options", []))
+                    for item in batch_items
+                ]
                 inputs = processor(
                     images=images,
                     text=prompts,
@@ -169,12 +152,13 @@ def compute_dev_accuracy(
                     return_tensors="pt",
                 ).to(device)
                 outputs = model.generate(**inputs, max_new_tokens=20)
-                input_len = inputs.input_ids.shape[1]
-                generated_ids = outputs[:, input_len:]
-                decoded_answers = processor.batch_decode(generated_ids, skip_special_tokens=True)
+                decoded_answers = processor.batch_decode(outputs, skip_special_tokens=True)
 
-                for idx, item, decoded in zip(batch_indices, batch_items, decoded_answers):
-                    pred_answer = decoded.strip().rstrip(".")
+                for idx, item, prompt, decoded in zip(batch_indices, batch_items, prompts, decoded_answers):
+                    pred_answer = decoded.strip()
+                    if pred_answer.lower().startswith(prompt.lower()):
+                        pred_answer = pred_answer[len(prompt):].strip()
+                    pred_answer = pred_answer.rstrip(".")
                     if not pred_answer:
                         pred_answer = "--"
                     predictions.append(build_result_record(item, idx, pred_answer))
@@ -249,7 +233,7 @@ def run_train(args, config: ExperimentConfig):
     batch_size = args.batch_size or config.training.batch_size
     collator = Blip2Collator(
         pad_token_id=processor.tokenizer.pad_token_id or 1,
-        label_pad_token_id=1,
+        label_pad_token_id=-100,
     )
 
     train_dataloader = DataLoader(
@@ -270,7 +254,6 @@ def run_train(args, config: ExperimentConfig):
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.training.learning_rate)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, last_epoch=-1)
     scaler = torch.amp.GradScaler("cuda", enabled=config.training.bf16)
-    criterion = nn.CrossEntropyLoss(ignore_index=1)
 
     min_eval_loss = float("inf")
     best_dev_accuracy = 0.0
@@ -291,14 +274,18 @@ def run_train(args, config: ExperimentConfig):
         for idx, batch in enumerate(pbar):
             batch_copy = {key: value.clone() for key, value in batch.items()}
             loss = compute_blip2_loss(
-                model, batch_copy, device, criterion, bf16=config.training.bf16
+                model, batch_copy, device, bf16=config.training.bf16
             )
 
             epoch_loss += loss.item()
             cal_loss += loss
 
             if (idx + 1) % config.training.cal_num == 0 or idx == len(train_dataloader) - 1:
-                averaged_loss = cal_loss / config.training.cal_num
+                if (idx + 1) % config.training.cal_num == 0:
+                    divisor = config.training.cal_num
+                else:
+                    divisor = (idx + 1) % config.training.cal_num
+                averaged_loss = cal_loss / divisor
                 optimizer.zero_grad()
                 scaler.scale(averaged_loss).backward()
                 scaler.step(optimizer)
@@ -310,9 +297,10 @@ def run_train(args, config: ExperimentConfig):
             global_step += 1
 
         eval_loss = compute_eval_loss(
-            model, valid_dataloader, device, criterion, bf16=config.training.bf16
+            model, valid_dataloader, device, bf16=config.training.bf16
         )
         dev_loss_history.append({"epoch": epoch + 1, "eval_loss": eval_loss})
+        min_eval_loss = min(min_eval_loss, eval_loss)
 
         dev_accuracy = compute_dev_accuracy(
             model, valid_dataset, processor, device,
@@ -372,7 +360,7 @@ def run_train(args, config: ExperimentConfig):
             pass
 
         infer_args = Args()
-        infer_args.out_checkpoint = str(best_model_path)
+        infer_args.out_checkpoint = str(out_checkpoint)
         infer_args.out_results = str(out_results)
         infer_args.jsonl_dir = args.jsonl_dir or config.dataset.data_path
         infer_args.image_dir = args.image_dir or config.dataset.image_dir

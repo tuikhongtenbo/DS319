@@ -12,6 +12,7 @@ from transformers import Blip2ForConditionalGeneration, Blip2Processor, BitsAndB
 
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import (
+    build_blip2_prompt,
     build_result_record,
     resolve_test_path,
 )
@@ -32,18 +33,14 @@ class Blip2Predictor:
     @torch.no_grad()
     def predict(self, image_path: str, question: str, options: list) -> str:
         image = Image.open(image_path).convert("RGB")
-        if options:
-            options_str = ", ".join(options)
-            prompt = f"Question: {question} Options: {options_str} Answer:"
-        else:
-            prompt = f"Question: {question} Answer:"
+        prompt = build_blip2_prompt(question, options)
         inputs = self.processor(images=image, text=prompt, return_tensors="pt").to(self.device)
 
         outputs = self.model.generate(**inputs, max_new_tokens=20)
-        input_len = inputs.input_ids.shape[1]
-        generated_ids = outputs[:, input_len:]
-        decoded = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-        return decoded.strip().rstrip(".")
+        decoded = self.processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
+        if decoded.lower().startswith(prompt.lower()):
+            decoded = decoded[len(prompt):].strip()
+        return decoded.rstrip(".")
 
 
 def run_infer(args, config: ExperimentConfig):
@@ -71,13 +68,17 @@ def run_infer(args, config: ExperimentConfig):
             model.generation_config.pad_token_id = processor.tokenizer.pad_token_id or 1
 
     if args.out_checkpoint and Path(args.out_checkpoint).exists():
-        lora_path = Path(args.out_checkpoint) / "best_model"
+        checkpoint_path = Path(args.out_checkpoint)
+        if (checkpoint_path / "adapter_config.json").exists():
+            lora_path = checkpoint_path
+        else:
+            lora_path = checkpoint_path / "best_model"
+
         if lora_path.exists():
             logger.info(f"Loading trained LoRA weights from {lora_path}")
             model = PeftModel.from_pretrained(model, str(lora_path))
         else:
-            logger.warning(f"Could not find best_model at {lora_path}. Using base model.")
-
+            logger.warning(f"Could not find LoRA weights at {lora_path}. Using base model.")
     if not config.model.load_in_8bit and not config.model.load_in_4bit:
         model = model.to(device)
 
