@@ -59,16 +59,18 @@ args = type('Args', (), {
     "model_name": get_model_name_from_path(model_path),
     "conv_mode": None,
     "sep": ",",
-    "temperature": 0.1,  # SpaceLLaVA uses 0.1
+    "temperature": 0.0,
     "top_p": None,
     "num_beams": 1,
-    "max_new_tokens": 512
+    "max_new_tokens": 8
 })()
 
 model_name = get_model_name_from_path(model_path)
 tokenizer, model, image_processor, context_len = load_pretrained_model(
     args.model_path, None, model_name
 )
+
+model.to(torch.bfloat16)
 
 if os.path.exists(PEFT_MODEL_ID):
     print(f"Loading LoRA weights from {PEFT_MODEL_ID}")
@@ -119,7 +121,7 @@ def eval_model(args, question, image_file):
         images,
         image_processor,
         model.config
-    ).to(model.device, dtype=torch.float16)
+    ).to(model.device, dtype=torch.bfloat16)
 
     input_ids = (
         tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")

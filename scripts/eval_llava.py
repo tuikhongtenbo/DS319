@@ -59,7 +59,7 @@ args = type('Args', (), {
     "model_name": get_model_name_from_path(model_path),
     "conv_mode": None,
     "sep": ",",
-    "temperature": 0.0,
+    "temperature": 0.4,
     "top_p": None,
     "num_beams": 1,
     "max_new_tokens": 8
@@ -158,7 +158,8 @@ with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', e
         image_name = data['image']
         image_filepath = os.path.join(IMAGE_DIR, image_name)
         
-        qs = f'You are currently a senior expert in spatial relation reasoning. \n Given an Image, a Question and Options, your task is to answer the correct spatial relation. Note that you only need to choose one option from the all options without explaining any reason. \n Input: Image: {IMAGE_PLACEHOLDER}, Question: {question}, Options: {"; ".join(options)}. \n Output:'
+        # Match the training format exactly: just the raw question (image token is automatically prepended by eval_model)
+        qs = question
         output = eval_model(args, qs, image_filepath)
         
         count += 1
