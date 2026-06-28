@@ -62,6 +62,12 @@ Download COCO2017 test images:
 bash scripts/download_coco.sh
 ```
 
+On Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/download_coco.ps1
+```
+
 Expected image layout:
 
 ```text
