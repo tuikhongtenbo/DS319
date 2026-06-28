@@ -111,10 +111,11 @@ def compute_dev_accuracy(
     model.eval()
     predictions = []
     gt_answers = []
+    raw_data = getattr(valid_dataset, "data", valid_dataset)
 
     with torch.no_grad():
         for idx in tqdm(range(len(valid_dataset)), desc="[Dev Accuracy]"):
-            item = valid_dataset[idx]
+            item = raw_data[idx]
             question = item["question"]
             gt_answer = str(item["answer"])
             image_path = valid_dataset.image_dir / item["image"]
