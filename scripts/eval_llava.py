@@ -32,7 +32,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULT_FILE_PATH = os.path.join(PROJECT_ROOT, 'outputs/llava_logs/test_results_llava.jsonl')
 FILE_PATH = os.path.join(PROJECT_ROOT, 'src/datasets/data/test.jsonl')
 IMAGE_DIR = os.path.join(PROJECT_ROOT, 'data/images/COCO2017/')
-PEFT_MODEL_ID = os.path.join(PROJECT_ROOT, 'outputs/llava_checkpoints/saved_model')
+PEFT_MODEL_ID = os.path.join(PROJECT_ROOT, 'outputs/llava_checkpoints/saved_model/checkpoint-2000')
 # ======================================================================
 
 def load_image(image_file):
