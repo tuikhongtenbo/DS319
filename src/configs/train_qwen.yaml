@@ -1,5 +1,5 @@
 model:
-  model_name_or_path: "qwen3.5-flash"
+  model_name_or_path: "qwen3.7-max"
   model_type: "qwen_vl"
 dataset:
   data_path: "src/datasets/data/test_500.jsonl"
