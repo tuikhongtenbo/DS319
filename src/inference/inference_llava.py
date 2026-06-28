@@ -101,6 +101,8 @@ def run_infer(args, config: ExperimentConfig):
             logger.info(f"Loading LoRA adapter from {peft_model_id}")
             model.load_adapter(peft_model_id)
 
+    # Convert entire model to bfloat16 to match bf16 training precision
+    model = model.to(torch.bfloat16)
     model.eval()
 
     # ── Infer conv_mode (matching reference lines 95-106) ───────────────
