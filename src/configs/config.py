@@ -25,6 +25,8 @@ class ModelConfig:
     lora_alpha: int = 32
     lora_dropout: float = 0.05
     lora_target_modules: List[str] = field(default_factory=lambda: ["q_proj", "k_proj", "v_proj"])
+    # Vision-language projector LR (CRITICAL for multimodal training)
+    mm_projector_lr: float = 2e-5
 
 @dataclass
 class DatasetConfig:
@@ -35,15 +37,16 @@ class DatasetConfig:
 @dataclass
 class TrainingConfig:
     output_dir: str
-    num_epochs: int = 1  # was 30, too many -> mode collapse
+    num_epochs: int = 10  # matches reference
     batch_size: int = 8
-    learning_rate: float = 2e-5  # was 4e-5, lower LR for stability
-    patience: int = 5
+    learning_rate: float = 2e-4  # matches reference
+    gradient_accumulation_steps: int = 2  # matches reference (effective batch = 8*2=16)
+    patience: int = 10
     seed: int = 42
-    cal_num: int = 2
+    cal_num: int = 2  # kept for backward compat
     bf16: bool = True
-    warmup_ratio: float = 0.03  # was 0.02
-    weight_decay: float = 0.01  # add regularization
+    warmup_ratio: float = 0.02  # matches reference
+    weight_decay: float = 0.0  # matches reference
 
 @dataclass
 class ExperimentConfig:

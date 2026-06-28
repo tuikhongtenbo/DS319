@@ -67,6 +67,7 @@ cd {shlex.quote(str(LLAVA_REPO))}
 
 deepspeed --include localhost:0 llava/train/train.py \\
     --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} \\
+    --mm_projector_lr {getattr(config.model, 'mm_projector_lr', 2e-5)} \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
@@ -84,13 +85,13 @@ deepspeed --include localhost:0 llava/train/train.py \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
-    --gradient_accumulation_steps {config.training.cal_num} \\
+    --gradient_accumulation_steps {getattr(config.training, 'gradient_accumulation_steps', 2)} \\
     --evaluation_strategy "no" \\
-    --save_steps 500 \\
-    --save_total_limit 2 \\
+    --save_steps 100 \\
+    --save_total_limit 3 \\
     --learning_rate {config.training.learning_rate} \\
-    --weight_decay {getattr(config.training, "weight_decay", 0.01)} \\
-    --warmup_ratio {getattr(config.training, "warmup_ratio", 0.03)} \\
+    --weight_decay {getattr(config.training, 'weight_decay', 0.0)} \\
+    --warmup_ratio {getattr(config.training, 'warmup_ratio', 0.02)} \\
     --lr_scheduler_type "cosine" \\
     --logging_steps 2 \\
     --tf32 True \\

@@ -8,6 +8,7 @@ model:
   use_lora: true
   lora_r: 128
   lora_alpha: 256
+  mm_projector_lr: 2e-5  # Critical: separate LR for vision-language projector
 dataset:
   data_path: "src/datasets/data"
   image_dir: "data/images/COCO2017"
@@ -15,5 +16,6 @@ training:
   output_dir: "./outputs/llava"
   num_epochs: 10
   batch_size: 8
+  gradient_accumulation_steps: 2  # Critical: effective batch = 8*2=16 (matches reference)
   patience: 10
-  learning_rate: 2.0e-04
+  learning_rate: 2e-4
