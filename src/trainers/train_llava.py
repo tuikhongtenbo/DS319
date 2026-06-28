@@ -65,7 +65,7 @@ def run_train(args, config: ExperimentConfig):
 set -e
 cd {shlex.quote(str(LLAVA_REPO))}
 
-deepspeed --include localhost:0 llava/train/train_mem.py \\
+deepspeed --include localhost:0 llava/train/train.py \\
     --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} --mm_projector_lr 2e-5 \\
     --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
