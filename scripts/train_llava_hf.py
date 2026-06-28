@@ -1,31 +1,27 @@
 #!/usr/bin/env python3
 """
-Train LLaVA LoRA without flash attention.
-
-Usage:
-    python scripts/train_llava_hf.py --config train_llava.yaml
+Train LLaVA LoRA - wrapper that calls LLaVA's train.py directly.
 """
 
-import argparse
-import os
 import sys
 from pathlib import Path
 
-# Add LLaVA to path
+# Path to LLaVA repo
 LLAVA_REPO = Path("/workspace/LLaVA")
+
+# Add LLaVA to path
 sys.path.insert(0, str(LLAVA_REPO))
 
-from llava.train.trainer import train
-from llava.utils.config import training_args
-
-
-def main():
+# Import the train function from LLaVA
+# LLaVA's train.py has a main() or train() function at the bottom
+if __name__ == "__main__":
+    import argparse
+    
+    # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--lora_enable", type=lambda x: x.lower() == "true", default=True)
     parser.add_argument("--lora_r", type=int, default=128)
     parser.add_argument("--lora_alpha", type=int, default=256)
-    parser.add_argument("--lora_dropout", type=float, default=0.05)
-    parser.add_argument("--lora_target_modules", type=str, default="q_proj,k_proj,v_proj")
     parser.add_argument("--model_name_or_path", type=str, required=True)
     parser.add_argument("--version", type=str, default="v1")
     parser.add_argument("--data_path", type=str, required=True)
@@ -36,8 +32,8 @@ def main():
     parser.add_argument("--mm_use_im_start_end", type=lambda x: x.lower() == "true", default=False)
     parser.add_argument("--mm_use_im_patch_token", type=lambda x: x.lower() == "true", default=False)
     parser.add_argument("--image_aspect_ratio", type=str, default="pad")
-    parser.add_argument("--group_by_modulate_length", type=lambda x: x.lower() == "true", default=True)
-    parser.add_argument("--bf16", type=lambda x: x.lower() == "true", default=True, help="Use bfloat16")
+    parser.add_argument("--group_by_modality_length", type=lambda x: x.lower() == "true", default=True)
+    parser.add_argument("--bf16", type=lambda x: x.lower() == "true", default=True)
     parser.add_argument("--output_dir", type=str, required=True)
     parser.add_argument("--num_train_epochs", type=int, default=10)
     parser.add_argument("--per_device_train_batch_size", type=int, default=8)
@@ -56,51 +52,51 @@ def main():
     parser.add_argument("--gradient_checkpointing", type=lambda x: x.lower() == "true", default=True)
     parser.add_argument("--dataloader_num_workers", type=int, default=0)
     parser.add_argument("--lazy_preprocess", type=lambda x: x.lower() == "true", default=True)
-    parser.add_argument("--local_rank", type=int, default=-1)
-
-    args = parser.parse_args()
-
-    # Build training args compatible with original train.py
-    training_args.output_dir = args.output_dir
-    training_args.lora_enable = args.lora_enable
-    training_args.lora_r = args.lora_r
-    training_args.lora_alpha = args.lora_alpha
-    training_args.lora_dropout = args.lora_dropout
-    training_args.lora_target_modules = args.lora_target_modules.split(",")
-    training_args.model_name_or_path = args.model_name_or_path
-    training_args.version = args.version
-    training_args.data_path = args.data_path
-    training_args.image_folder = args.image_folder
-    training_args.vision_tower = args.vision_tower
-    training_args.mm_projector_type = args.mm_projector_type
-    training_args.mm_vision_select_layer = args.mm_vision_select_layer
-    training_args.mm_use_im_start_end = args.mm_use_im_start_end
-    training_args.mm_use_im_patch_token = args.mm_use_im_patch_token
-    training_args.image_aspect_ratio = args.image_aspect_ratio
-    training_args.group_by_modality_length = args.group_by_modulate_length
-    training_args.bf16 = args.bf16
-    training_args.num_train_epochs = args.num_train_epochs
-    training_args.per_device_train_batch_size = args.per_device_train_batch_size
-    training_args.per_device_eval_batch_size = args.per_device_eval_batch_size
-    training_args.gradient_accumulation_steps = args.gradient_accumulation_steps
-    training_args.evaluation_strategy = args.evaluation_strategy
-    training_args.save_strategy = args.save_strategy
-    training_args.save_steps = args.save_steps
-    training_args.save_total_limit = args.save_total_limit
-    training_args.learning_rate = args.learning_rate
-    training_args.weight_decay = args.weight_decay
-    training_args.warmup_ratio = args.warmup_ratio
-    training_args.lr_scheduler_type = args.lr_scheduler_type
-    training_args.logging_steps = args.logging_steps
-    training_args.model_max_length = args.model_max_length
-    training_args.gradient_checkpointing = args.gradient_checkpointing
-    training_args.dataloader_num_workers = args.dataloader_num_workers
-    training_args.local_rank = args.local_rank
-
-    # DON'T use flash attention - causes compatibility issues
-    # Just use default attention
-    train(attn_implementation="eager")
-
-
-if __name__ == "__main__":
-    main()
+    parser1 = parser
+    
+    args = parser1.parse_args()
+    
+    # Build command to run LLaVA train.py directly
+    import subprocess
+    
+    cmd = [
+        sys.executable,
+        str(LLAVA_REPO / "llava" / "train" / "train.py"),
+        "--lora_enable", str(args.lora_enable),
+        "--lora_r", str(args.lora_r),
+        "--lora_alpha", str(args.lora_alpha),
+        "--model_name_or_path", args.model_name_or_path,
+        "--version", args.version,
+        "--data_path", args.data_path,
+        "--image_folder", args.image_folder,
+        "--vision_tower", args.vision_tower,
+        "--mm_projector_type", args.mm_projector_type,
+        "--mm_vision_select_layer", str(args.mm_vision_select_layer),
+        "--mm_use_im_start_end", str(args.mm_use_im_start_end),
+        "--mm_use_im_patch_token", str(args.mm_use_im_patch_token),
+        "--image_aspect_ratio", args.image_aspect_ratio,
+        "--group_by_modality_length", str(args.group_by_modality_length),
+        "--bf16", str(args.bf16),
+        "--output_dir", args.output_dir,
+        "--num_train_epochs", str(args.num_train_epochs),
+        "--per_device_train_batch_size", str(args.per_device_train_batch_size),
+        "--per_device_eval_batch_size", str(args.per_device_eval_batch_size),
+        "--gradient_accumulation_steps", str(args.gradient_accumulation_steps),
+        "--evaluation_strategy", args.evaluation_strategy,
+        "--save_strategy", args.save_strategy,
+        "--save_steps", str(args.save_steps),
+        "--save_total_limit", str(args.save_total_limit),
+        "--learning_rate", str(args.learning_rate),
+        "--weight_decay", str(args.weight_decay),
+        "--warmup_ratio", str(args.warmup_ratio),
+        "--lr_scheduler_type", args.lr_scheduler_type,
+        "--logging_steps", str(args.logging_steps),
+        "--model_max_length", str(args.model_max_length),
+        "--gradient_checkpointing", str(args.gradient_checkpointing),
+        "--dataloader_num_workers", str(args.dataloader_num_workers),
+        "--lazy_preprocess", str(args.lazy_preprocess),
+    ]
+    
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd)
+    sys.exit(result.returncode)
