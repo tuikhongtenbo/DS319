@@ -127,7 +127,7 @@ deepspeed --include localhost:0 llava/train/train_mem.py \\
 
     logger.info("Starting LLaVA LoRA training via deepspeed...")
     result = subprocess.run(
-        ["bash", str(script_path)],
+        ["bash", str(script_path.resolve())],
         cwd=str(LLAVA_REPO),
         check=False,
     )
