@@ -9,5 +9,5 @@ training:
   output_dir: "./outputs/blip"
   num_epochs: 30
   batch_size: 8
-  patience: 5
+  patience: 10
   learning_rate: 6.0e-07
