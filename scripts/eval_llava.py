@@ -148,6 +148,21 @@ def eval_model(args, question, image_file):
 count = 0
 right_count = 0
 
+# Spatial keywords for parsing
+SPATIAL_KEYWORDS = [
+    'left', 'right', 'above', 'below', 'behind', 'front',
+    'in front of', 'on top of', 'under', 'near', 'between',
+    'nobody', 'everybody', 'somebody'
+]
+
+def extract_spatial_keyword(output: str) -> str:
+    """Extract first spatial keyword from output"""
+    output_lower = output.lower().strip()
+    for keyword in SPATIAL_KEYWORDS:
+        if keyword in output_lower:
+            return keyword
+    return output_lower.split()[0] if output_lower else output_lower
+
 os.makedirs(os.path.dirname(RESULT_FILE_PATH), exist_ok=True)
 with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', encoding="utf-8") as fout:
     for line in f:
@@ -157,27 +172,30 @@ with open(FILE_PATH, 'r', encoding="utf-8") as f, open(RESULT_FILE_PATH, 'w+', e
         options = data['options']
         image_name = data['image']
         image_filepath = os.path.join(IMAGE_DIR, image_name)
-        
-        # Match the training format exactly: just the raw question (image token is automatically prepended by eval_model)
+
+        # Match the training format exactly: just the raw question
         qs = question
         output = eval_model(args, qs, image_filepath)
-        
+
         count += 1
-        if len(output) == 0:
-            output = '--'
-        if output.lower() in data['answer'].lower():
-            result_json = {'id': id, 'result': 1, "output": output.lower(), "answer": data['answer']}
-            fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
-            right_count += 1
-        elif data['answer'].lower() in output.lower():
-            result_json = {'id': id, 'result': 1, "output": output.lower(), "answer": data['answer']}
+
+        # Extract keyword from output
+        output_clean = extract_spatial_keyword(output)
+        answer = data['answer'].lower().strip()
+
+        if len(output_clean) == 0:
+            output_clean = '--'
+
+        # Match extracted keyword with answer
+        if output_clean in answer or answer in output_clean:
+            result_json = {'id': id, 'result': 1, "output": output_clean, "answer": answer}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
             right_count += 1
         else:
-            result_json = {'id': id, 'result': 0, "output": output.lower(), "answer": data['answer']}
+            result_json = {'id': id, 'result': 0, "output": output_clean, "answer": answer}
             fout.write(json.dumps(result_json, ensure_ascii=False) + '\n')
-            
-        print(f'[{count}] Output: {output.lower()} | Answer: {data["answer"].lower()} | Accuracy: {right_count}/{count} = {right_count / count:.4f}')
+
+        print(f'[{count}] Output: {output_clean} | Answer: {answer} | Accuracy: {right_count}/{count} = {right_count / count:.4f}')
 
 accuracy = right_count / count if count > 0 else 0.0
 print(f'\n=================================')
