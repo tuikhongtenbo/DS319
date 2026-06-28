@@ -4,6 +4,8 @@ Main dispatcher entrypoint for training, inference, and evaluation.
 
 import argparse
 import json
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from tqdm import tqdm
@@ -42,11 +44,17 @@ def parse_args():
     parser.add_argument("--model_name", type=str, default="", help="Override API model name")
     parser.add_argument("--shots", type=int, default=0, help="Number of shots for API models")
     parser.add_argument("--batch_size", type=int, help="Override batch size")
+    parser.add_argument(
+        "--num_workers",
+        type=int,
+        default=1,
+        help="Number of parallel workers for API inference (GPT/Qwen).",
+    )
     parser.add_argument("--vllm_host", type=str, default=None, help="vLLM server URL (e.g., http://localhost:8000)")
     return parser.parse_args()
 
 
-# ─── Training dispatchers ────────────────────────────────────────────────────
+# Training dispatchers
 
 def run_train(args, config: ExperimentConfig):
     set_seed(config.training.seed)
@@ -69,7 +77,7 @@ def run_train(args, config: ExperimentConfig):
         raise ValueError(f"Unsupported model type for training: {model_type}")
 
 
-# ─── Inference dispatchers ────────────────────────────────────────────────────
+# Inference dispatchers
 
 def run_infer(args, config: ExperimentConfig):
     model_type = config.model.model_type.lower()
@@ -166,32 +174,48 @@ def run_api_inference_loop(args, config, predictor, target_data_path):
     logger.info(f"Loading API test dataset from {target_data_path}")
     test_data = load_jsonl(str(target_data_path))
     image_dir = Path(args.image_dir or config.dataset.image_dir)
+    num_workers = max(1, args.num_workers or 1)
 
-    predictions = []
-    logger.info("Starting API inference...")
-    for index, item in enumerate(tqdm(test_data)):
+    def predict_one(index, item):
         image_path = image_dir / item["image"]
-
-        # Retry loop for rate limit handling
         max_retries = 5
+        output = "ERROR"
+
         for attempt in range(max_retries):
             try:
                 output = predictor.predict(str(image_path), item["question"], item.get("options", []))
                 break
             except Exception as e:
-                if "rate_limit" in str(e).lower() and attempt < max_retries - 1:
-                    import time
-                    wait_time = (attempt + 1) * 10  # 10, 20, 30, 40 seconds
+                is_rate_limit = "rate_limit" in str(e).lower() or "429" in str(e)
+                if is_rate_limit and attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 10
                     logger.warning(f"Rate limit hit (attempt {attempt+1}/{max_retries}). Waiting {wait_time}s...")
                     time.sleep(wait_time)
                 else:
                     logger.error(f"Prediction failed after {max_retries} attempts: {e}")
-                    output = "ERROR"
+                    break
 
-        predictions.append(build_result_record(item, index, output))
+        record = build_result_record(item, index, output)
+        return index, item, output, record
 
-        # Print each answer in real-time
-        logger.info(f"[{index+1}/{len(test_data)}] Q: {item['question'][:60]}... | A: {output}")
+    predictions = [None] * len(test_data)
+    logger.info(f"Starting API inference with {num_workers} worker(s)...")
+
+    if num_workers == 1:
+        for index, item in enumerate(tqdm(test_data)):
+            _, item, output, record = predict_one(index, item)
+            predictions[index] = record
+            logger.info(f"[{index+1}/{len(test_data)}] Q: {item['question'][:60]}... | A: {output}")
+    else:
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = [
+                executor.submit(predict_one, index, item)
+                for index, item in enumerate(test_data)
+            ]
+            for future in tqdm(as_completed(futures), total=len(futures)):
+                index, item, output, record = future.result()
+                predictions[index] = record
+                logger.info(f"[{index+1}/{len(test_data)}] Q: {item['question'][:60]}... | A: {output}")
 
     out_results = Path(args.out_results) if args.out_results else Path("results")
     out_results.mkdir(parents=True, exist_ok=True)
@@ -201,8 +225,7 @@ def run_api_inference_loop(args, config, predictor, target_data_path):
 
     run_eval(predictions, args)
 
-
-# ─── Evaluation ─────────────────────────────────────────────────────────────
+# Evaluation
 
 def run_eval(predictions=None, args=None):
     if predictions is None:
@@ -232,7 +255,7 @@ def run_eval(predictions=None, args=None):
     return metrics
 
 
-# ─── Entrypoint ─────────────────────────────────────────────────────────────
+# Entrypoint
 
 def main():
     args = parse_args()

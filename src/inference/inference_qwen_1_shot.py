@@ -45,7 +45,7 @@ class QwenOneShotPredictor:
             "Note that you only need to choose one option from all options without explaining any reason."
         )
 
-        example_user_prompt = f"Input: Question: {self.example_question}, Options: {'; '.join(self.example_options)}.\nOutput:"
+        example_user_prompt = f"Input: Question: {self.example_question}, Options: {'; '.join(self.example_options)}.\nOutput: {self.example_answer}"
         user_prompt = f"Input: Question: {question}, Options: {'; '.join(options)}.\nOutput:"
 
         messages = [
@@ -55,18 +55,11 @@ class QwenOneShotPredictor:
                 "content": [
                     {"type": "text", "text": example_user_prompt},
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{self.example_base64_image}"}},
-                ],
-            },
-            {"role": "assistant", "content": self.example_answer},
-            {
-                "role": "user",
-                "content": [
                     {"type": "text", "text": user_prompt},
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
                 ],
             },
         ]
-
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,

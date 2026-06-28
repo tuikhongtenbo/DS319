@@ -13,4 +13,6 @@ python "${ROOT_DIR}/main.py" \
     --mode infer \
     --config "${ROOT_DIR}/src/configs/train_qwen.yaml" \
     --shots 0 \
+    --num_workers 4 \
+    --out_results ./outputs/qwen_0shot \
     "$@"
