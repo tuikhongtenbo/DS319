@@ -1,0 +1,12 @@
+model:
+  model_name_or_path: "liuhaotian/llava-v1.6-mistral-7b"  # Base model
+  model_type: "llava"
+  use_vllm: false
+inference:
+  shot: 0
+  delay: 1.0
+dataset:
+  data_path: "src/datasets/data/test_500.jsonl"
+  image_dir: "data/images/COCO2017"
+output:
+  output_dir: "outputs/llava"
