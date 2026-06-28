@@ -58,12 +58,12 @@ def run_train(args, config: ExperimentConfig):
     elif "blip2" in model_type:
         from src.trainers.train_blip2 import run_train as blip2_train
         blip2_train(args, config)
-    elif "llava" in model_type:
-        from src.trainers.train_llava import run_train as llava_train
-        llava_train(args, config)
     elif "spacellava" in model_type:
         from src.trainers.train_spacellava import run_train as spacellava_train
         spacellava_train(args, config)
+    elif "llava" in model_type:
+        from src.trainers.train_llava import run_train as llava_train
+        llava_train(args, config)
     else:
         raise ValueError(f"Unsupported model type for training: {model_type}")
 

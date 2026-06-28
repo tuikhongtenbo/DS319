@@ -1,10 +1,14 @@
 """
 Training wrapper for LLaVA (liuhaotian/llava-v1.5-7b).
-Generates a bash script compatible with SpatialMQA / LLaVA training format.
-No DeepSpeed - uses plain torchrun for simplicity and broad compatibility.
+
+Generates a deepspeed training script matching the reference SpatialMQA
+llava_lora_train.sh, then runs it via subprocess.
+After training, automatically evaluates on the test set.
 """
 
 import shlex
+import subprocess
+import sys
 from pathlib import Path
 
 from ..configs.config import ExperimentConfig
@@ -13,6 +17,9 @@ from ..utils.io import load_json, load_jsonl, save_json
 from ..utils.logging import setup_logger
 
 logger = setup_logger(__name__)
+
+# Path to the LLaVA repository (cloned via scripts/setup_llava.sh)
+LLAVA_REPO = Path("/workspace/LLaVA")
 
 
 def convert_to_llava_format(data_path: str, output_path: str) -> None:
@@ -37,13 +44,23 @@ def convert_to_llava_format(data_path: str, output_path: str) -> None:
     save_json(llava_data, output_path)
 
 
+def _find_latest_checkpoint(output_dir: Path) -> Path | None:
+    """Find the latest checkpoint directory inside output_dir."""
+    checkpoints = sorted(output_dir.glob("checkpoint-*"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if checkpoints:
+        return checkpoints[0]
+    # If no checkpoint-* dirs, the output_dir itself may be the model dir
+    if (output_dir / "adapter_config.json").exists():
+        return output_dir
+    return None
+
+
 def run_train(args, config: ExperimentConfig):
     out_checkpoint = Path(args.out_checkpoint) if args.out_checkpoint else Path(config.training.output_dir)
     out_results = Path(args.out_results) if args.out_results else out_checkpoint
 
     out_checkpoint.mkdir(parents=True, exist_ok=True)
     out_results.mkdir(parents=True, exist_ok=True)
-    _out_results = out_results
 
     data_path = args.jsonl_dir or config.dataset.data_path
     image_dir = args.image_dir or config.dataset.image_dir
@@ -53,22 +70,21 @@ def run_train(args, config: ExperimentConfig):
     logger.info(f"Formatting dataset to LLaVA conversational format: {formatted_data_path}")
     convert_to_llava_format(str(train_path), str(formatted_data_path))
 
+    # Build the training script matching reference: llava_lora_train.sh
+    # Uses deepspeed + llava/train/train_mem.py (same as SpatialMQA reference)
+    saved_model_dir = out_checkpoint / "saved_model"
     script_path = out_checkpoint / "train_llava.sh"
     script = f"""#!/bin/bash
 set -e
-cd /workspace/LLaVA
+cd {shlex.quote(str(LLAVA_REPO))}
 
-# No DeepSpeed - uses plain torchrun for broad compatibility
-torchrun --nproc_per_node=1 --master_port=29500 \\
-    llava/train/train.py \\
-    --lora_enable True \\
-    --lora_r {config.model.lora_r} \\
-    --lora_alpha {config.model.lora_alpha} \\
-    --mm_projector_lr 2e-5 \\
+deepspeed --include localhost:0 llava/train/train_mem.py \\
+    --lora_enable True --lora_r {config.model.lora_r} --lora_alpha {config.model.lora_alpha} --mm_projector_lr 2e-5 \\
+    --deepspeed ./scripts/zero3.json \\
     --model_name_or_path {config.model.model_name_or_path} \\
     --version v1 \\
-    --data_path {shlex.quote(str(formatted_data_path))} \\
-    --image_folder {shlex.quote(str(image_dir))} \\
+    --data_path {shlex.quote(str(formatted_data_path.resolve()))} \\
+    --image_folder {shlex.quote(str(Path(image_dir).resolve()))} \\
     --vision_tower openai/clip-vit-large-patch14-336 \\
     --mm_projector_type mlp2x_gelu \\
     --mm_vision_select_layer -2 \\
@@ -77,7 +93,7 @@ torchrun --nproc_per_node=1 --master_port=29500 \\
     --image_aspect_ratio pad \\
     --group_by_modality_length True \\
     --bf16 {str(config.training.bf16).lower()} \\
-    --output_dir {shlex.quote(str(out_checkpoint / 'saved_model'))} \\
+    --output_dir {shlex.quote(str(saved_model_dir.resolve()))} \\
     --num_train_epochs {config.training.num_epochs} \\
     --per_device_train_batch_size {config.training.batch_size} \\
     --per_device_eval_batch_size 4 \\
@@ -99,23 +115,42 @@ torchrun --nproc_per_node=1 --master_port=29500 \\
 """
     script_path.write_text(script, encoding="utf-8")
     logger.info("Generated LLaVA training script: %s", script_path)
-    logger.info("Run this script from the LLaVA repo directory: cd /workspace/LLaVA && bash %s", script_path)
 
-    # After training, load best model and evaluate on test set
-    best_model_path = out_checkpoint / "best_model"
-    if best_model_path.exists():
-        logger.info("Found existing best_model; loading for evaluation on test set...")
-        from ..inference.inference_llava import run_infer as llava_infer
-
-        class Args:
-            out_checkpoint = str(best_model_path)
-            out_results = str(_out_results)
-            jsonl_dir = args.jsonl_dir or config.dataset.data_path
-            image_dir = args.image_dir or config.dataset.image_dir
-
-        llava_infer(Args(), config)
-    else:
-        logger.info(
-            "LLaVA training script generated. Run with: cd /workspace/LLaVA && bash %s",
-            script_path,
+    # ── Run the training script ─────────────────────────────────────────
+    if not LLAVA_REPO.exists():
+        logger.error(
+            "LLaVA repo not found at %s. "
+            "Run: bash scripts/setup_llava.sh %s",
+            LLAVA_REPO, LLAVA_REPO,
         )
+        sys.exit(1)
+
+    logger.info("Starting LLaVA LoRA training via deepspeed...")
+    result = subprocess.run(
+        ["bash", str(script_path)],
+        cwd=str(LLAVA_REPO),
+        check=False,
+    )
+    if result.returncode != 0:
+        logger.error("LLaVA training failed with return code %d", result.returncode)
+        sys.exit(result.returncode)
+
+    logger.info("LLaVA training completed successfully!")
+
+    # ── Find checkpoint and run evaluation ──────────────────────────────
+    checkpoint_path = _find_latest_checkpoint(saved_model_dir)
+    if checkpoint_path is None:
+        logger.warning("No checkpoint found in %s, skipping evaluation.", saved_model_dir)
+        return
+
+    logger.info("Found checkpoint: %s. Running evaluation on test set...", checkpoint_path)
+
+    from ..inference.inference_llava import run_infer as llava_infer
+
+    class InferArgs:
+        out_checkpoint = str(checkpoint_path)
+        out_results = str(out_results)
+        jsonl_dir = args.jsonl_dir or config.dataset.data_path
+        image_dir = args.image_dir or config.dataset.image_dir
+
+    llava_infer(InferArgs(), config)

@@ -1,10 +1,9 @@
 """
-HuggingFace Transformers-native inference for LLaVA.
+Inference for LLaVA with LoRA fine-tuned weights.
 
-Uses transformers.LlavaForConditionalGeneration + AutoProcessor
-(NOT the standalone llava library which requires old torch==2.1.2).
-
-Same prompt format & generation parameters as spatial_test_llava.py reference.
+Uses the native llava library (load_pretrained_model, conv_templates,
+process_images, tokenizer_image_token) - matching the reference
+spatial_test_llava_lora.py from SpatialMQA exactly.
 """
 
 import re
@@ -15,7 +14,21 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
-from transformers import AutoProcessor, LlavaForConditionalGeneration
+from llava.constants import (
+    IMAGE_TOKEN_INDEX,
+    DEFAULT_IMAGE_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IM_END_TOKEN,
+    IMAGE_PLACEHOLDER,
+)
+from llava.conversation import conv_templates
+from llava.model.builder import load_pretrained_model
+from llava.utils import disable_torch_init
+from llava.mm_utils import (
+    process_images,
+    tokenizer_image_token,
+    get_model_name_from_path,
+)
 
 from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import build_result_record, resolve_test_path
@@ -38,10 +51,10 @@ def load_image(image_file: str) -> Image.Image:
 
 def _build_question(question: str, options: list) -> str:
     """
-    Build the prompt text EXACTLY matching spatial_test_llava.py line 163.
+    Build the prompt text matching spatial_test_llava_lora.py line 165.
 
-    The reference uses literal \\n inside the f-string (producing the
-    two-character sequence backslash-n in the final string).
+    Uses literal \\n inside the f-string (producing the two-character
+    sequence backslash-n in the final string), matching the reference.
     """
     options_str = "; ".join(options)
     return (
@@ -54,45 +67,64 @@ def _build_question(question: str, options: list) -> str:
     )
 
 
-def _build_prompt(question_text: str) -> str:
-    """
-    Wrap question text into LLaVA-v1.5 chat format.
-
-    This replicates what conv_templates["llava_v1"] produces:
-        USER: <image>\n{question}\nASSISTANT:
-
-    Since _build_question already embeds <image> inside the text,
-    we just wrap it with the USER/ASSISTANT format.
-    """
-    return f"USER: {question_text}\nASSISTANT:"
-
-
 def run_infer(args, config: ExperimentConfig):
     """
-    Main inference loop using HuggingFace Transformers LLaVA.
+    Main inference loop using native llava library.
+    Matches the reference spatial_test_llava_lora.py.
     """
     model_path = config.model.model_name_or_path
 
-    logger.info(f"Loading LLaVA model from {model_path} via HuggingFace Transformers...")
+    logger.info(f"Loading LLaVA model from {model_path} via llava.model.builder...")
 
-    # ── Load model and processor ────────────────────────────────────────
-    processor = AutoProcessor.from_pretrained(model_path)
-    model = LlavaForConditionalGeneration.from_pretrained(
-        model_path,
-        torch_dtype=torch.float16,
-        device_map="auto",
+    # ── Load model (matching reference lines 59-78) ─────────────────────
+    disable_torch_init()
+    model_name = get_model_name_from_path(model_path)
+
+    tokenizer, model, image_processor, context_len = load_pretrained_model(
+        model_path, None, model_name
     )
 
-    # Load LoRA weights if available
-    if hasattr(args, 'out_checkpoint') and args.out_checkpoint and Path(args.out_checkpoint).exists():
-        lora_path = Path(args.out_checkpoint) / "best_model"
-        if not lora_path.exists():
-            lora_path = Path(args.out_checkpoint) / "saved_model"
-        if lora_path.exists():
-            logger.info(f"Loading LoRA weights from {lora_path}")
-            model.load_adapter(str(lora_path))
+    # Load LoRA weights if checkpoint path provided
+    if hasattr(args, 'out_checkpoint') and args.out_checkpoint:
+        peft_model_id = args.out_checkpoint
+        # If the checkpoint dir itself doesn't have adapter_config.json,
+        # look for subdirectories
+        ckpt_path = Path(peft_model_id)
+        if ckpt_path.exists():
+            if not (ckpt_path / "adapter_config.json").exists():
+                # Try saved_model or checkpoint-* subdirs
+                candidates = [
+                    ckpt_path / "saved_model",
+                    ckpt_path,
+                ]
+                # Also check for checkpoint-* dirs
+                candidates.extend(sorted(ckpt_path.glob("checkpoint-*"), key=lambda p: p.stat().st_mtime, reverse=True))
+                for candidate in candidates:
+                    if candidate.exists() and (candidate / "adapter_config.json").exists():
+                        peft_model_id = str(candidate)
+                        break
+
+            logger.info(f"Loading LoRA adapter from {peft_model_id}")
+            model.load_adapter(peft_model_id)
 
     model.eval()
+
+    # ── Infer conv_mode (matching reference lines 95-106) ───────────────
+    conv_mode = None
+    if "llama-2" in model_name.lower():
+        conv_mode = "llava_llama_2"
+    elif "mistral" in model_name.lower():
+        conv_mode = "mistral_instruct"
+    elif "v1.6-34b" in model_name.lower():
+        conv_mode = "chatml_direct"
+    elif "v1" in model_name.lower():
+        conv_mode = "llava_v1"
+    elif "mpt" in model_name.lower():
+        conv_mode = "mpt"
+    else:
+        conv_mode = "llava_v0"
+
+    logger.info(f"Using conv_mode: {conv_mode}")
 
     # ── Load dataset ────────────────────────────────────────────────────
     target_path = resolve_test_path(args.jsonl_dir or config.dataset.data_path)
@@ -100,7 +132,7 @@ def run_infer(args, config: ExperimentConfig):
     test_data = load_jsonl(str(target_path))
     image_dir = Path(args.image_dir or config.dataset.image_dir)
 
-    # ── Inference parameters (matching reference) ───────────────────────
+    # ── Inference parameters (matching reference line 67-70) ────────────
     temperature = 0.4
     top_p = None
     num_beams = 1
@@ -121,11 +153,27 @@ def run_infer(args, config: ExperimentConfig):
         image_name = item["image"]
         image_filepath = str(image_dir / image_name)
 
-        # Build question text (same as reference line 163)
+        # Build question text (matching reference line 165)
         question_text = _build_question(question, options)
 
-        # Build full prompt with chat format
-        prompt = _build_prompt(question_text)
+        # ── Build prompt via conv_templates (matching reference lines 82-120) ──
+        qs = question_text
+        image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+        if IMAGE_PLACEHOLDER in qs:
+            if model.config.mm_use_im_start_end:
+                qs = re.sub(IMAGE_PLACEHOLDER, image_token_se, qs)
+            else:
+                qs = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, qs)
+        else:
+            if model.config.mm_use_im_start_end:
+                qs = image_token_se + "\n" + qs
+            else:
+                qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
+
+        conv = conv_templates[conv_mode].copy()
+        conv.append_message(conv.roles[0], qs)
+        conv.append_message(conv.roles[1], None)
+        prompt = conv.get_prompt()
 
         # Load and process image
         try:
@@ -136,17 +184,25 @@ def run_infer(args, config: ExperimentConfig):
             count += 1
             continue
 
-        # Process inputs through the HF processor
-        inputs = processor(
-            text=prompt,
-            images=image,
-            return_tensors="pt",
-        ).to(model.device)
+        image_sizes = [image.size]
+        images_tensor = process_images(
+            [image],
+            image_processor,
+            model.config,
+        ).to(model.device, dtype=torch.float16)
 
-        # Generate
+        input_ids = (
+            tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
+            .unsqueeze(0)
+            .cuda()
+        )
+
+        # Generate (matching reference lines 136-147)
         with torch.inference_mode():
             output_ids = model.generate(
-                **inputs,
+                input_ids,
+                images=images_tensor,
+                image_sizes=image_sizes,
                 do_sample=True if temperature > 0 else False,
                 temperature=temperature,
                 top_p=top_p,
@@ -155,17 +211,15 @@ def run_infer(args, config: ExperimentConfig):
                 use_cache=True,
             )
 
-        # Decode — strip the input prompt from the output
-        input_len = inputs["input_ids"].shape[1]
-        generated_ids = output_ids[:, input_len:]
-        output = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        # Decode (matching reference line 149)
+        output = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
         count += 1
 
         if len(output) == 0:
             output = "--"
 
-        # Same matching logic as reference (lines 168-178)
+        # Same matching logic as reference (lines 170-180)
         output_lower = output.lower()
         is_correct = 0
         if output_lower in answer.lower() or answer.lower() in output_lower:
@@ -192,7 +246,7 @@ def run_infer(args, config: ExperimentConfig):
     metrics = calculate_spatial_metrics(predictions)
     accuracy = right_count / count if count > 0 else 0.0
     logger.info("=" * 60)
-    logger.info("--- LLaVA Evaluation Results ---")
+    logger.info("--- LLaVA LoRA Evaluation Results ---")
     logger.info(f"Total samples: {count}")
     logger.info(f"Correct: {right_count}/{count}")
     logger.info(f"Accuracy:    {metrics['accuracy']:.4f}")
