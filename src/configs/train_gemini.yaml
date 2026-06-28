@@ -3,7 +3,7 @@ model:
   model_type: "gemini-3.1-flash-lite"
 inference:
   shot: 0  # 0 for 0-shot, 1 for 1-shot
-  delay: 1.0  # delay between API calls (seconds)
+  delay: 5.0  # delay between API calls (seconds) - free tier: 15 req/min = 4s min
 dataset:
   data_path: "src/datasets/data/test_500.jsonl"
   image_dir: "data/images/COCO2017"
