@@ -46,7 +46,8 @@ pip install \
   "einops-exts==0.0.4" \
   "timm==0.6.13" \
   "Pillow" \
-  "tqdm"
+  "tqdm" \
+  "protobuf"
 
 echo ""
 echo "Installing DeepSpeed for LoRA training..."
