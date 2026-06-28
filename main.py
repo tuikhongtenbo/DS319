@@ -38,7 +38,8 @@ def parse_args():
         help="Path to save or load best checkpoint",
     )
     parser.add_argument("--out_results", type=str, help="Path to save logs and predictions")
-    parser.add_argument("--api_key", type=str, default="", help="API key for GPT")
+    parser.add_argument("--api_key", type=str, default="", help="API key for GPT/Qwen API models")
+    parser.add_argument("--model_name", type=str, default="", help="Override API model name")
     parser.add_argument("--shots", type=int, default=0, help="Number of shots for API models")
     parser.add_argument("--batch_size", type=int, help="Override batch size")
     parser.add_argument("--vllm_host", type=str, default=None, help="vLLM server URL (e.g., http://localhost:8000)")
@@ -132,6 +133,7 @@ def run_infer(args, config: ExperimentConfig):
         llava_infer(args, config)
     elif "qwen_vl" in model_type:
         logger.info(f"Initializing Qwen Predictor ({args.shots}-shot)")
+        qwen_model_name = args.model_name or config.model.model_name_or_path
         data_path = Path(args.jsonl_dir or config.dataset.data_path)
         target_data_path = resolve_test_path(data_path)
         train_data_path = (
@@ -141,17 +143,17 @@ def run_infer(args, config: ExperimentConfig):
         )
 
         if args.shots >= 1:
-            from src.inference.inference_qwen import QwenOneShotPredictor
+            from src.inference.inference_qwen_1_shot import QwenOneShotPredictor
             predictor = QwenOneShotPredictor(
-                model_name=config.model.model_name_or_path,
+                model_name=qwen_model_name,
                 api_key=args.api_key,
                 train_data_path=str(train_data_path),
                 image_dir=args.image_dir or config.dataset.image_dir,
             )
         else:
-            from src.inference.inference_qwen import QwenZeroShotPredictor
+            from src.inference.inference_qwen_0_shot import QwenZeroShotPredictor
             predictor = QwenZeroShotPredictor(
-                model_name=config.model.model_name_or_path,
+                model_name=qwen_model_name,
                 api_key=args.api_key,
             )
 
