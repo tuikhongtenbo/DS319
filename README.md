@@ -126,11 +126,14 @@ bash scripts/gpt_infer_0_shot.sh --api_key YOUR_OPENAI_API_KEY --out_results ./o
 # GPT-4o 1-shot
 bash scripts/gpt_infer_1_shot.sh --api_key YOUR_OPENAI_API_KEY --out_results ./outputs/gpt_1shot
 
-# Qwen-VL 0-shot (DashScope API)
-bash scripts/qwen_infer_0_shot.sh --api_key YOUR_DASHSCOPE_API_KEY --out_results ./outputs/qwen_0shot
+# Qwen 0-shot (DashScope API, OpenAI-compatible)
+QWEN_API_KEY=YOUR_DASHSCOPE_API_KEY bash scripts/qwen_infer_0_shot.sh --out_results ./outputs/qwen_0shot
 
-# Qwen-VL 1-shot (DashScope API)
-bash scripts/qwen_infer_1_shot.sh --api_key YOUR_DASHSCOPE_API_KEY --out_results ./outputs/qwen_1shot
+# Qwen 1-shot (DashScope API, OpenAI-compatible)
+QWEN_API_KEY=YOUR_DASHSCOPE_API_KEY bash scripts/qwen_infer_1_shot.sh --out_results ./outputs/qwen_1shot
+
+# Optional: override the default model from src/configs/train_qwen.yaml
+bash scripts/qwen_infer_0_shot.sh --api_key YOUR_DASHSCOPE_API_KEY --model_name qwen3.5-flash --out_results ./outputs/qwen_0shot
 ```
 
 **All inference scripts** accept these common arguments:
@@ -141,6 +144,8 @@ bash scripts/qwen_infer_1_shot.sh --api_key YOUR_DASHSCOPE_API_KEY --out_results
 | `--image_dir`   | Path to image directory (default:`data/images/COCO2017`)  |
 | `--out_results` | Output directory for predictions                            |
 | `--shots`       | Number of shots (0 or 1) — auto-set by script for GPT/Qwen |
+| `--api_key`     | Optional API key override for GPT/Qwen; Qwen also reads `QWEN_API_KEY` from env or `.env` |
+| `--model_name`  | Optional Qwen model override (default: `qwen3.5-flash` in `train_qwen.yaml`) |
 
 Predictions are saved to `{out_results}/predictions.jsonl`.
 
