@@ -136,6 +136,23 @@ def run_infer(args, config: ExperimentConfig):
     elif "spacellava" in model_type:
         from src.inference.inference_spacellava import run_infer as spacellava_infer
         spacellava_infer(args, config)
+    elif "gemini" in model_type:
+        logger.info(f"Initializing Gemini Predictor ({args.shots}-shot)")
+        data_path = Path(args.jsonl_dir or config.dataset.data_path)
+        target_data_path = resolve_test_path(data_path)
+
+        if args.shots >= 1:
+            from src.inference.inference_gemini_1_shot import GeminiOneShotPredictor
+            predictor = GeminiOneShotPredictor(
+                model_name=model_type,
+                api_key=args.api_key,
+                image_dir=args.image_dir or config.dataset.image_dir,
+            )
+        else:
+            from src.inference.inference_gemini_0_shot import GeminiZeroShotPredictor
+            predictor = GeminiZeroShotPredictor(model_name=model_type, api_key=args.api_key)
+
+        run_api_inference_loop(args, config, predictor, target_data_path)
     elif "llava" in model_type:
         from src.inference.inference_llava import run_infer as llava_infer
         llava_infer(args, config)

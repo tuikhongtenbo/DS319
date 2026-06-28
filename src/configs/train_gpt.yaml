@@ -1,6 +1,0 @@
-model:
-  model_name_or_path: "gpt-4o-mini"
-  model_type: "gpt-4o-mini"
-dataset:
-  data_path: "src/datasets/data"
-  image_dir: "data/images/COCO2017"
