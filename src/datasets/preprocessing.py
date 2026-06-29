@@ -2,6 +2,7 @@
 Prompt builders and dataset path helpers for SpatialMQA.
 """
 
+import re
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
@@ -88,6 +89,31 @@ def build_blip2_prompt(question: str, options: List[str]) -> str:
         options_str = ", ".join(options)
         return f"Question: {question} Options: {options_str} Answer:"
     return f"Question: {question} Answer:"
+
+
+def decode_blip2_output(processor, generated_ids, prompt: str) -> str:
+    """
+    Decode BLIP-2 generation and keep only the generated answer.
+
+    OPT-based BLIP-2 can return either only newly generated tokens or the full
+    prompt plus completion depending on generation path/version. Dev accuracy
+    should be computed from the answer text, not from an echoed prompt that
+    contains all options.
+    """
+    text = processor.decode(generated_ids, skip_special_tokens=True).strip()
+    if not text:
+        return ""
+
+    prompt_clean = prompt.strip()
+    if text.lower().startswith(prompt_clean.lower()):
+        text = text[len(prompt_clean):].strip()
+
+    marker_match = list(re.finditer(r"\b(?:answer|output)\s*:", text, flags=re.IGNORECASE))
+    if marker_match:
+        text = text[marker_match[-1].end():].strip()
+
+    text = re.sub(r"^[\s\-\.:;,]+", "", text)
+    return text.rstrip(".").strip()
 
 def build_spacellava_prompt(question: str, options: List[str]) -> str:
     """SpaceLLaVA zero-shot prompt from the original repo."""

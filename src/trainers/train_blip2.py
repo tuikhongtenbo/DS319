@@ -15,7 +15,12 @@ from transformers import Blip2ForConditionalGeneration, Blip2Processor, BitsAndB
 
 from ..configs.config import ExperimentConfig
 from ..datasets.collator import Blip2Collator
-from ..datasets.preprocessing import build_blip2_prompt, build_result_record, resolve_split_paths
+from ..datasets.preprocessing import (
+    build_blip2_prompt,
+    build_result_record,
+    decode_blip2_output,
+    resolve_split_paths,
+)
 from ..metrics.metrics import calculate_spatial_metrics
 from ..utils.io import load_json, load_jsonl
 from ..utils.logging import setup_logger
@@ -152,13 +157,9 @@ def compute_dev_accuracy(
                     return_tensors="pt",
                 ).to(device)
                 outputs = model.generate(**inputs, max_new_tokens=20)
-                decoded_answers = processor.batch_decode(outputs, skip_special_tokens=True)
 
-                for idx, item, prompt, decoded in zip(batch_indices, batch_items, prompts, decoded_answers):
-                    pred_answer = decoded.strip()
-                    if pred_answer.lower().startswith(prompt.lower()):
-                        pred_answer = pred_answer[len(prompt):].strip()
-                    pred_answer = pred_answer.rstrip(".")
+                for idx, item, prompt, generated_ids in zip(batch_indices, batch_items, prompts, outputs):
+                    pred_answer = decode_blip2_output(processor, generated_ids, prompt)
                     if not pred_answer:
                         pred_answer = "--"
                     predictions.append(build_result_record(item, idx, pred_answer))
@@ -256,7 +257,7 @@ def run_train(args, config: ExperimentConfig):
     scaler = torch.amp.GradScaler("cuda", enabled=config.training.bf16)
 
     min_eval_loss = float("inf")
-    best_dev_accuracy = 0.0
+    best_dev_accuracy = float("-inf")
     early_stopping_hook = 0
     losses_history = []
     dev_loss_history = []

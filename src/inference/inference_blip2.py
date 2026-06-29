@@ -14,6 +14,7 @@ from ..configs.config import ExperimentConfig
 from ..datasets.preprocessing import (
     build_blip2_prompt,
     build_result_record,
+    decode_blip2_output,
     resolve_test_path,
 )
 from ..metrics.metrics import calculate_spatial_metrics
@@ -35,12 +36,8 @@ class Blip2Predictor:
         image = Image.open(image_path).convert("RGB")
         prompt = build_blip2_prompt(question, options)
         inputs = self.processor(images=image, text=prompt, return_tensors="pt").to(self.device)
-
         outputs = self.model.generate(**inputs, max_new_tokens=20)
-        decoded = self.processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
-        if decoded.lower().startswith(prompt.lower()):
-            decoded = decoded[len(prompt):].strip()
-        return decoded.rstrip(".")
+        return decode_blip2_output(self.processor, outputs[0], prompt)
 
 
 def run_infer(args, config: ExperimentConfig):
