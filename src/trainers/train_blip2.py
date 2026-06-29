@@ -1,151 +1,123 @@
-import json
+import os
 import re
+import json
+import pickle
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
 
 import torch
+from torch.utils.data import Dataset, DataLoader
 from PIL import Image
-from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from peft import LoraConfig, get_peft_model
-from transformers import (
-    Blip2ForConditionalGeneration,
-    Blip2Processor,
-    BitsAndBytesConfig,
+
+from datasets import load_dataset
+from transformers import Blip2Processor, Blip2ForConditionalGeneration
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+
+
+# ============================================================
+# Config
+# ============================================================
+
+model_dir = "/projects/Models/"
+model_name_or_path = f"{model_dir}blip2-opt-2.7b"
+
+image_dir = "/projects/SpatialMQA/COCO2017/test2017/"
+
+train_file = "/projects/SpatialMQA/datasets/blip2_train/train_3780.jsonl"
+dev_file = "/projects/SpatialMQA/datasets/blip2_train/dev_536.jsonl"
+
+output_dir = Path("/projects/SpatialMQA/finetune_models/models_arg/blip2_lora_best_acc")
+output_dir.mkdir(parents=True, exist_ok=True)
+
+cuda_id = 7
+device = torch.device(f"cuda:{cuda_id}" if torch.cuda.is_available() else "cpu")
+
+batch_size = 8
+learning_rate = 4e-5
+num_epochs = 30
+patience = 5
+grad_accum_steps = 2
+bf16 = True
+
+torch.manual_seed(42)
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+    torch.cuda.manual_seed_all(42)
+
+
+# ============================================================
+# Load processor and dataset
+# ============================================================
+
+processor = Blip2Processor.from_pretrained(model_name_or_path)
+
+if processor.tokenizer.pad_token_id is None:
+    processor.tokenizer.pad_token = processor.tokenizer.eos_token
+
+train_ds = load_dataset(
+    "json",
+    data_files=train_file,
+    split="train[:100%]",
 )
 
-from ..configs.config import ExperimentConfig
-from ..datasets.collator import Blip2Collator
-from ..datasets.preprocessing import (
-    build_blip2_prompt,
-    build_result_record,
-    decode_blip2_output,
-    resolve_split_paths,
+eval_ds = load_dataset(
+    "json",
+    data_files=dev_file,
+    split="train[:100%]",
 )
-from ..metrics.metrics import calculate_spatial_metrics
-from ..utils.io import load_json, load_jsonl
-from ..utils.logging import setup_logger
-from ..utils.seed import set_seed
 
-
-logger = setup_logger(__name__)
+print(f"Training sets: {len(train_ds)} - Validating set: {len(eval_ds)}")
 
 
 # ============================================================
 # Utility functions
 # ============================================================
 
-def normalize_answer_text(answer: Any) -> str:
+def normalize_answer(text):
     """
-    Normalize answer for safer comparison/debugging.
+    Normalize text để so sánh prediction với gold answer.
+    """
+    if text is None:
+        return ""
 
-    Examples:
-    - " A. Left " -> "a left"
-    - "Left." -> "left"
-    - 0 -> "0"
-    """
-    text = str(answer).strip().lower()
+    text = str(text).strip().lower()
+    text = text.replace("</s>", "")
+    text = text.replace("<pad>", "")
+    text = text.replace("<s>", "")
+
+    # Nếu model generate kiểu "Answer: left"
+    text = re.sub(r"^answer\s*[:\-]\s*", "", text)
+
+    # Chỉ lấy dòng đầu tiên nếu model generate nhiều dòng
+    text = text.split("\n")[0].strip()
+
+    # Xóa dấu câu đơn giản ở đầu/cuối
+    text = text.strip(" .,:;!?")
+
+    # Gộp khoảng trắng
     text = re.sub(r"\s+", " ", text)
-    text = text.replace(".", "")
-    text = text.replace(")", "")
-    text = text.replace(":", "")
+
     return text.strip()
 
 
-def strip_option_prefix(option: Any) -> str:
+def decode_blip2_output(processor, output_ids, prompt):
     """
-    Remove option prefix such as:
-    - "A. left" -> "left"
-    - "B) right" -> "right"
-    - "C: above" -> "above"
+    Decode output của BLIP-2.
+
+    Một số model generate có thể trả lại cả prompt + answer,
+    nên hàm này có bước strip prompt nếu cần.
     """
-    text = str(option).strip()
-    text = re.sub(r"^[A-Da-d][\.\)\:]\s*", "", text)
-    return text.strip()
+    text = processor.tokenizer.decode(
+        output_ids,
+        skip_special_tokens=True,
+    ).strip()
 
+    prompt = str(prompt).strip()
 
-def is_letter_answer(answer: Any) -> bool:
-    return str(answer).strip().upper() in ["A", "B", "C", "D"]
+    if text.lower().startswith(prompt.lower()):
+        text = text[len(prompt):].strip()
 
-
-def is_digit_answer(answer: Any) -> bool:
-    return str(answer).strip().isdigit()
-
-
-def build_option_scoring_targets(
-    options: List[Any],
-    gold_answer: Any,
-) -> Tuple[List[str], str]:
-    """
-    Decide what strings should be scored by BLIP-2 during dev accuracy.
-
-    Important:
-    Training uses:
-        answer = str(item["answer"])
-
-    So during option scoring, the target strings should match the format
-    of item["answer"], not necessarily the full option text.
-
-    Cases:
-    1. gold = "A"/"B"/"C"/"D"
-       -> score ["A", "B", "C", "D"]
-
-    2. gold = 0/1/2/3 or "0"/"1"/"2"/"3"
-       -> score ["0", "1", "2", "3"]
-
-    3. gold is full answer text, e.g. "left"
-       -> score normalized option text, e.g. ["left", "right", ...]
-
-    4. fallback:
-       -> score raw option text
-    """
-    gold_str = str(gold_answer).strip()
-
-    if is_letter_answer(gold_answer):
-        letters = ["A", "B", "C", "D"]
-        return letters[:len(options)], "letter"
-
-    if is_digit_answer(gold_answer):
-        indices = [str(i) for i in range(len(options))]
-        return indices, "index"
-
-    stripped_options = [strip_option_prefix(option) for option in options]
-
-    # If gold matches stripped option content, score stripped option content.
-    normalized_gold = normalize_answer_text(gold_answer)
-    normalized_stripped = [normalize_answer_text(option) for option in stripped_options]
-
-    if normalized_gold in normalized_stripped:
-        return stripped_options, "option_text"
-
-    # Otherwise use raw options.
-    return [str(option) for option in options], "raw_option"
-
-
-def convert_best_index_to_prediction(
-    best_idx: int,
-    options: List[Any],
-    gold_answer: Any,
-    mode: str,
-) -> Any:
-    """
-    Convert best option index into prediction format expected by metric.
-
-    The goal is: pred_answer should have the same format as item["answer"].
-    """
-    if mode == "letter":
-        return ["A", "B", "C", "D"][best_idx]
-
-    if mode == "index":
-        # Preserve gold type if possible.
-        if isinstance(gold_answer, int):
-            return best_idx
-        return str(best_idx)
-
-    if mode == "option_text":
-        return strip_option_prefix(options[best_idx])
-
-    return str(options[best_idx])
+    return text
 
 
 # ============================================================
@@ -153,648 +125,551 @@ def convert_best_index_to_prediction(
 # ============================================================
 
 class ImageCaptioningDataset(Dataset):
-    """Dataset class for BLIP-2 LoRA training."""
+    """
+    Dataset BLIP-2 giống code tác giả:
 
-    def __init__(
-        self,
-        data_path: str,
-        image_dir: str,
-        processor: Blip2Processor,
-        max_samples: int = None,
-    ):
+    Input:
+        image + question
+
+    Label:
+        answer + eos_token
+
+    Không dùng options, không dùng build_blip2_prompt.
+    """
+
+    def __init__(self, dataset, image_dir, processor):
+        self.dataset = dataset
         self.image_dir = Path(image_dir)
         self.processor = processor
 
-        path = Path(data_path)
-        if path.suffix == ".jsonl":
-            self.data = load_jsonl(path)
-        else:
-            self.data = load_json(path)
+    def __len__(self):
+        return len(self.dataset)
 
-        if max_samples is not None:
-            self.data = self.data[:max_samples]
-
-    def __len__(self) -> int:
-        return len(self.data)
-
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        item = self.data[idx]
+    def __getitem__(self, idx):
+        item = self.dataset[idx]
 
         question = item["question"]
-        options = item.get("options", [])
-        prompt = build_blip2_prompt(question, options)
-
-        # Important: this is the target format used during training.
         answer = str(item["answer"])
+        image_name = item["image"]
 
-        image_path = self.image_dir / item["image"]
+        image_path = self.image_dir / image_name
         image = Image.open(image_path).convert("RGB")
 
-        encoding = self.processor(
-            images=image,
-            text=prompt,
-            return_tensors="pt",
-        )
+        return {
+            "idx": idx,
+            "image": image,
+            "question": question,
+            "answer": answer,
+            "raw_item": item,
+        }
 
-        labels = self.processor.tokenizer(
-            answer,
-            return_tensors="pt",
+
+def blip2_collate_fn(batch):
+    """
+    Collate function để batch được các question/answer có độ dài khác nhau.
+
+    Giống tác giả ở logic:
+        processor(images=image, text=question)
+        labels = answer + eos
+
+    Nhưng viết chắc hơn để tránh lỗi stack tensor do độ dài khác nhau.
+    """
+    images = [item["image"] for item in batch]
+    questions = [item["question"] for item in batch]
+    answers = [item["answer"] for item in batch]
+
+    encoding = processor(
+        images=images,
+        text=questions,
+        padding=True,
+        truncation=True,
+        return_tensors="pt",
+    )
+
+    eos_token_id = processor.tokenizer.eos_token_id
+
+    if eos_token_id is None:
+        # BLIP-2 OPT thường dùng 50118
+        eos_token_id = 50118
+
+    label_ids = []
+
+    for answer in answers:
+        ids = processor.tokenizer(
+            str(answer),
             add_special_tokens=False,
         ).input_ids
 
-        eos_token_id = self.processor.tokenizer.eos_token_id
-        if eos_token_id is None:
-            eos_token_id = 50118
+        ids = ids + [eos_token_id]
+        label_ids.append(ids)
 
-        eos_tensor = torch.tensor([[eos_token_id]], dtype=labels.dtype)
-        labels = torch.cat((labels, eos_tensor), dim=1)
+    max_label_len = max(len(ids) for ids in label_ids)
 
-        encoding["labels"] = labels
+    padded_labels = []
 
-        for key, value in encoding.items():
-            encoding[key] = value.squeeze(0)
+    for ids in label_ids:
+        pad_len = max_label_len - len(ids)
 
-        return encoding
+        # -100 để HuggingFace loss bỏ qua token padding
+        padded = ids + [-100] * pad_len
+        padded_labels.append(padded)
+
+    labels = torch.tensor(padded_labels, dtype=torch.long)
+
+    encoding["labels"] = labels
+
+    return encoding
 
 
 # ============================================================
-# Loss
+# Load model
 # ============================================================
 
-def compute_blip2_loss(
-    model,
-    batch: Dict[str, torch.Tensor],
-    device: torch.device,
-    bf16: bool = True,
-) -> torch.Tensor:
-    input_ids = batch.pop("input_ids").to(device)
-    pixel_values = batch.pop("pixel_values").to(device)
-    attention_mask = batch.pop("attention_mask").to(device)
-    labels = batch.pop("labels").to(device)
+print("Loading BLIP-2 model...")
 
+if torch.cuda.is_available():
+    model = Blip2ForConditionalGeneration.from_pretrained(
+        model_name_or_path,
+        device_map={"": cuda_id},
+        load_in_8bit=True,
+    )
+else:
+    model = Blip2ForConditionalGeneration.from_pretrained(
+        model_name_or_path,
+    )
+    model = model.to(device)
+
+# Nên có khi fine-tune 8-bit + LoRA
+model = prepare_model_for_kbit_training(model)
+
+lora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
+    bias="none",
+    target_modules=["q_proj", "k_proj"],
+)
+
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+
+if not torch.cuda.is_available():
+    model = model.to(device)
+
+
+# ============================================================
+# DataLoader
+# ============================================================
+
+train_dataset = ImageCaptioningDataset(
+    dataset=train_ds,
+    image_dir=image_dir,
+    processor=processor,
+)
+
+valid_dataset = ImageCaptioningDataset(
+    dataset=eval_ds,
+    image_dir=image_dir,
+    processor=processor,
+)
+
+train_dataloader = DataLoader(
+    train_dataset,
+    batch_size=batch_size,
+    shuffle=False,
+    pin_memory=True,
+    collate_fn=blip2_collate_fn,
+)
+
+valid_dataloader = DataLoader(
+    valid_dataset,
+    batch_size=batch_size,
+    shuffle=False,
+    pin_memory=True,
+    collate_fn=blip2_collate_fn,
+)
+
+
+# ============================================================
+# Loss / Eval Loss
+# ============================================================
+
+def move_batch_to_device(batch, device):
+    return {
+        key: value.to(device)
+        for key, value in batch.items()
+    }
+
+
+def compute_eval_loss(model, dataloader, device):
+    model.eval()
+
+    eval_loss = 0.0
     dtype = torch.bfloat16 if bf16 else torch.float16
     autocast_enabled = device.type == "cuda"
 
-    with torch.amp.autocast(
-        device_type=device.type,
-        dtype=dtype,
-        enabled=autocast_enabled,
-    ):
-        outputs = model(
-            input_ids=input_ids,
-            pixel_values=pixel_values,
-            attention_mask=attention_mask,
-            labels=labels,
-        )
-
-    return outputs.loss
-
-
-def compute_eval_loss(
-    model,
-    dataloader,
-    device: torch.device,
-    bf16: bool = True,
-) -> float:
-    model.eval()
-    eval_loss = 0.0
-
     with torch.no_grad():
-        for batch in tqdm(dataloader, desc="[Valid Loss]"):
-            batch_copy = {
-                key: value.clone()
-                for key, value in batch.items()
-            }
-            loss = compute_blip2_loss(
-                model,
-                batch_copy,
-                device,
-                bf16=bf16,
-            )
+        for batch in tqdm(dataloader, desc="Validating batch"):
+            batch = move_batch_to_device(batch, device)
+
+            with torch.amp.autocast(
+                device_type=device.type,
+                dtype=dtype,
+                enabled=autocast_enabled,
+            ):
+                outputs = model(
+                    input_ids=batch["input_ids"],
+                    pixel_values=batch["pixel_values"],
+                    attention_mask=batch["attention_mask"],
+                    labels=batch["labels"],
+                )
+
+                loss = outputs.loss
+
             eval_loss += loss.item()
 
     return eval_loss / max(len(dataloader), 1)
 
 
 # ============================================================
-# Dev accuracy
+# Dev Accuracy
 # ============================================================
-
-def _score_blip2_answer(
-    model,
-    processor: Blip2Processor,
-    image: Image.Image,
-    prompt: str,
-    answer: str,
-    device: torch.device,
-    bf16: bool = True,
-) -> float:
-    """
-    Score one candidate answer by teacher-forcing loss.
-    Lower loss means the model thinks this answer is more likely.
-    """
-    inputs = processor(
-        images=image,
-        text=prompt,
-        return_tensors="pt",
-    ).to(device)
-
-    labels = processor.tokenizer(
-        str(answer),
-        return_tensors="pt",
-        add_special_tokens=False,
-    ).input_ids
-
-    eos_token_id = processor.tokenizer.eos_token_id
-    if eos_token_id is None:
-        eos_token_id = 50118
-
-    eos_tensor = torch.tensor([[eos_token_id]], dtype=labels.dtype)
-    labels = torch.cat((labels, eos_tensor), dim=1).to(device)
-
-    dtype = torch.bfloat16 if bf16 else torch.float16
-    autocast_enabled = device.type == "cuda"
-
-    with torch.amp.autocast(
-        device_type=device.type,
-        dtype=dtype,
-        enabled=autocast_enabled,
-    ):
-        outputs = model(
-            input_ids=inputs["input_ids"],
-            pixel_values=inputs["pixel_values"],
-            attention_mask=inputs["attention_mask"],
-            labels=labels,
-        )
-
-    return float(outputs.loss.item())
-
 
 def compute_dev_accuracy(
     model,
     valid_dataset,
-    processor: Blip2Processor,
-    device: torch.device,
-    bf16: bool = True,
-    batch_size: int = 16,
-) -> float:
+    processor,
+    device,
+    max_new_tokens=20,
+):
     """
-    Compute multiple-choice dev accuracy.
+    Dev accuracy giống BLIP-1 và giống style tác giả:
 
-    Fixed logic:
-    - If answer is A/B/C/D, score A/B/C/D.
-    - If answer is 0/1/2/3, score 0/1/2/3.
-    - If answer is text, score option text.
-    - Prediction is converted back to the same format as gold answer.
+    Input:
+        image + question
+
+    Predict:
+        model.generate()
+
+    Compare:
+        normalize(pred) == normalize(gold)
     """
     model.eval()
-    predictions = []
+
+    correct = 0
+    total = 0
     debug_examples = []
 
-    raw_data = getattr(valid_dataset, "data", valid_dataset)
-
-    original_padding_side = processor.tokenizer.padding_side
-    processor.tokenizer.padding_side = "left"
+    dtype = torch.bfloat16 if bf16 else torch.float16
+    autocast_enabled = device.type == "cuda"
 
     if model.generation_config.pad_token_id is None:
-        model.generation_config.pad_token_id = processor.tokenizer.pad_token_id or 1
-
-    try:
-        with torch.inference_mode():
-            index_batches = range(0, len(valid_dataset), batch_size)
-
-            for start_idx in tqdm(index_batches, desc="[Dev Accuracy]"):
-                end_idx = min(start_idx + batch_size, len(valid_dataset))
-                batch_indices = list(range(start_idx, end_idx))
-
-                for idx in batch_indices:
-                    item = raw_data[idx]
-
-                    question = item["question"]
-                    options = item.get("options", [])
-                    gold_answer = item.get("answer")
-
-                    prompt = build_blip2_prompt(question, options)
-
-                    image_path = valid_dataset.image_dir / item["image"]
-                    with Image.open(image_path) as image_file:
-                        image = image_file.convert("RGB")
-
-                    if options:
-                        scoring_targets, mode = build_option_scoring_targets(
-                            options=options,
-                            gold_answer=gold_answer,
-                        )
-
-                        losses = []
-                        for target in scoring_targets:
-                            loss = _score_blip2_answer(
-                                model=model,
-                                processor=processor,
-                                image=image,
-                                prompt=prompt,
-                                answer=str(target),
-                                device=device,
-                                bf16=bf16,
-                            )
-                            losses.append(loss)
-
-                        best_idx = min(range(len(losses)), key=lambda i: losses[i])
-
-                        pred_answer = convert_best_index_to_prediction(
-                            best_idx=best_idx,
-                            options=options,
-                            gold_answer=gold_answer,
-                            mode=mode,
-                        )
-
-                        option_losses = {
-                            str(scoring_targets[i]): losses[i]
-                            for i in range(len(scoring_targets))
-                        }
-
-                    else:
-                        inputs = processor(
-                            images=image,
-                            text=prompt,
-                            return_tensors="pt",
-                        ).to(device)
-
-                        outputs = model.generate(
-                            **inputs,
-                            max_new_tokens=20,
-                        )
-
-                        pred_answer = (
-                            decode_blip2_output(processor, outputs[0], prompt)
-                            or "--"
-                        )
-                        option_losses = {}
-                        mode = "generate"
-
-                    predictions.append(
-                        build_result_record(item, idx, pred_answer)
-                    )
-
-                    if len(debug_examples) < 10:
-                        debug_examples.append(
-                            {
-                                "id": item.get("id", idx),
-                                "question": question,
-                                "options": options,
-                                "gold": gold_answer,
-                                "pred": pred_answer,
-                                "mode": mode,
-                                "option_losses": option_losses,
-                                "gold_norm": normalize_answer_text(gold_answer),
-                                "pred_norm": normalize_answer_text(pred_answer),
-                            }
-                        )
-
-    finally:
-        processor.tokenizer.padding_side = original_padding_side
-
-    logger.info("========== DEV ACC DEBUG EXAMPLES ==========")
-    for example in debug_examples:
-        logger.info(
-            "id=%s | mode=%s | gold=%r | pred=%r | gold_norm=%r | pred_norm=%r | losses=%s",
-            example["id"],
-            example["mode"],
-            example["gold"],
-            example["pred"],
-            example["gold_norm"],
-            example["pred_norm"],
-            example["option_losses"],
+        model.generation_config.pad_token_id = (
+            processor.tokenizer.pad_token_id
+            or processor.tokenizer.eos_token_id
+            or 1
         )
-        logger.info("options=%s", example["options"])
 
-    metrics = calculate_spatial_metrics(predictions)
+    with torch.no_grad():
+        for idx in tqdm(range(len(valid_dataset)), desc="Dev Accuracy"):
+            item = valid_dataset.dataset[idx]
 
-    logger.info("Dev metrics: %s", metrics)
+            question = item["question"]
+            gold_answer = str(item["answer"])
 
-    return metrics["accuracy"]
+            image_name = item["image"]
+            image_path = valid_dataset.image_dir / image_name
+
+            image = Image.open(image_path).convert("RGB")
+
+            # Quan trọng:
+            # Giống code tác giả: chỉ dùng question, không dùng options.
+            inputs = processor(
+                images=image,
+                text=question,
+                return_tensors="pt",
+            ).to(device)
+
+            with torch.amp.autocast(
+                device_type=device.type,
+                dtype=dtype,
+                enabled=autocast_enabled,
+            ):
+                outputs = model.generate(
+                    **inputs,
+                    max_new_tokens=max_new_tokens,
+                )
+
+            decoded = decode_blip2_output(
+                processor=processor,
+                output_ids=outputs[0],
+                prompt=question,
+            )
+
+            pred_answer = normalize_answer(decoded)
+            gold_norm = normalize_answer(gold_answer)
+
+            is_correct = pred_answer == gold_norm
+
+            correct += int(is_correct)
+            total += 1
+
+            if len(debug_examples) < 10:
+                debug_examples.append(
+                    {
+                        "idx": idx,
+                        "question": question,
+                        "gold": gold_answer,
+                        "decoded": decoded,
+                        "pred_norm": pred_answer,
+                        "gold_norm": gold_norm,
+                        "correct": is_correct,
+                    }
+                )
+
+    accuracy = correct / max(total, 1)
+
+    print("\n========== DEV ACC DEBUG EXAMPLES ==========")
+    for ex in debug_examples:
+        print(
+            f"idx={ex['idx']} | "
+            f"gold={ex['gold']!r} | "
+            f"decoded={ex['decoded']!r} | "
+            f"pred_norm={ex['pred_norm']!r} | "
+            f"gold_norm={ex['gold_norm']!r} | "
+            f"correct={ex['correct']}"
+        )
+        print(f"question={ex['question']}")
+        print("-" * 80)
+
+    print(f"Dev Accuracy: {accuracy:.4f}")
+
+    return accuracy
 
 
 # ============================================================
-# Training
+# Optimizer / Scheduler
 # ============================================================
 
-def run_train(args, config: ExperimentConfig):
-    set_seed(config.training.seed)
+optimizer = torch.optim.AdamW(
+    model.parameters(),
+    lr=learning_rate,
+)
 
-    out_checkpoint = (
-        Path(args.out_checkpoint)
-        if args.out_checkpoint
-        else Path(config.training.output_dir)
-    )
-    out_results = (
-        Path(args.out_results)
-        if args.out_results
-        else out_checkpoint
-    )
+scheduler = torch.optim.lr_scheduler.ExponentialLR(
+    optimizer,
+    gamma=0.9,
+    last_epoch=-1,
+)
 
-    out_checkpoint.mkdir(parents=True, exist_ok=True)
-    out_results.mkdir(parents=True, exist_ok=True)
+# bf16 thường không cần GradScaler
+scaler = torch.amp.GradScaler(
+    "cuda",
+    enabled=(device.type == "cuda" and not bf16),
+)
 
-    logger.info("Building BLIP-2 model and processor...")
 
-    processor = Blip2Processor.from_pretrained(
-        config.model.model_name_or_path
-    )
+# ============================================================
+# Training loop
+# ============================================================
 
-    kwargs = {
-        "device_map": config.model.device_map,
-    }
+best_dev_accuracy = float("-inf")
+min_eval_loss = float("inf")
+early_stopping_hook = 0
 
-    if config.model.load_in_8bit:
-        kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_8bit=True,
-        )
-    elif config.model.load_in_4bit:
-        kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-        )
+tracking_information = []
+losses_history = []
+dev_loss_history = []
+dev_accuracy_history = []
+log_history = []
 
-    model = Blip2ForConditionalGeneration.from_pretrained(
-        config.model.model_name_or_path,
-        **kwargs,
-    )
+global_step = 0
 
-    if config.model.use_lora:
-        logger.info("Wrapping model with LoRA...")
+print("Starting BLIP-2 LoRA finetuning...")
 
-        lora_config = LoraConfig(
-            r=config.model.lora_r,
-            lora_alpha=config.model.lora_alpha,
-            lora_dropout=config.model.lora_dropout,
-            bias="none",
-            target_modules=config.model.lora_target_modules,
-        )
+for epoch in range(num_epochs):
+    model.train()
 
-        model = get_peft_model(model, lora_config)
-        model.print_trainable_parameters()
+    epoch_loss = 0.0
+    optimizer.zero_grad(set_to_none=True)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    if not config.model.load_in_8bit and not config.model.load_in_4bit:
-        model = model.to(device)
-
-    data_path = args.jsonl_dir or config.dataset.data_path
-    image_dir = args.image_dir or config.dataset.image_dir
-
-    train_path, val_path = resolve_split_paths(data_path)
-
-    logger.info("Loading BLIP-2 train dataset from %s", train_path)
-
-    train_dataset = ImageCaptioningDataset(
-        data_path=str(train_path),
-        image_dir=image_dir,
-        processor=processor,
-        max_samples=config.dataset.max_samples,
+    pbar = tqdm(
+        train_dataloader,
+        desc=f"Epoch {epoch + 1}/{num_epochs} - Training",
     )
 
-    logger.info("Loading BLIP-2 valid dataset from %s", val_path)
+    for idx, batch in enumerate(pbar):
+        batch = move_batch_to_device(batch, device)
 
-    valid_dataset = ImageCaptioningDataset(
-        data_path=str(val_path),
-        image_dir=image_dir,
-        processor=processor,
-        max_samples=config.dataset.max_samples,
-    )
+        dtype = torch.bfloat16 if bf16 else torch.float16
+        autocast_enabled = device.type == "cuda"
 
-    batch_size = args.batch_size or config.training.batch_size
-
-    collator = Blip2Collator(
-        pad_token_id=processor.tokenizer.pad_token_id or 1,
-        label_pad_token_id=-100,
-    )
-
-    train_dataloader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        pin_memory=True,
-        collate_fn=collator,
-    )
-
-    valid_dataloader = DataLoader(
-        valid_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        pin_memory=True,
-        collate_fn=collator,
-    )
-
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=config.training.learning_rate,
-    )
-
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(
-        optimizer,
-        gamma=0.9,
-        last_epoch=-1,
-    )
-
-    # Note:
-    # GradScaler is mainly useful with fp16.
-    # If bf16=True, scaler can be disabled safely.
-    scaler = torch.amp.GradScaler(
-        "cuda",
-        enabled=(torch.cuda.is_available() and not config.training.bf16),
-    )
-
-    min_eval_loss = float("inf")
-    best_dev_accuracy = float("-inf")
-    early_stopping_hook = 0
-
-    losses_history = []
-    dev_loss_history = []
-    dev_accuracy_history = []
-    log_history = []
-
-    global_step = 0
-    grad_accum_steps = max(int(config.training.cal_num), 1)
-
-    logger.info("Starting BLIP-2 training loop...")
-
-    for epoch in range(config.training.num_epochs):
-        model.train()
-
-        epoch_loss = 0.0
-        optimizer.zero_grad(set_to_none=True)
-
-        pbar = tqdm(
-            train_dataloader,
-            desc=f"Epoch {epoch + 1}/{config.training.num_epochs} [Train]",
-        )
-
-        for idx, batch in enumerate(pbar):
-            batch_copy = {
-                key: value.clone()
-                for key, value in batch.items()
-            }
-
-            loss = compute_blip2_loss(
-                model=model,
-                batch=batch_copy,
-                device=device,
-                bf16=config.training.bf16,
+        with torch.amp.autocast(
+            device_type=device.type,
+            dtype=dtype,
+            enabled=autocast_enabled,
+        ):
+            outputs = model(
+                input_ids=batch["input_ids"],
+                pixel_values=batch["pixel_values"],
+                attention_mask=batch["attention_mask"],
+                labels=batch["labels"],
             )
 
-            raw_loss_value = loss.item()
-            epoch_loss += raw_loss_value
+            loss = outputs.loss
 
-            loss_for_backward = loss / grad_accum_steps
+        raw_loss = loss.item()
+        epoch_loss += raw_loss
 
-            scaler.scale(loss_for_backward).backward()
+        loss_for_backward = loss / grad_accum_steps
 
-            should_step = (
-                (idx + 1) % grad_accum_steps == 0
-                or idx == len(train_dataloader) - 1
-            )
+        scaler.scale(loss_for_backward).backward()
 
-            if should_step:
-                scaler.step(optimizer)
-                scaler.update()
-                optimizer.zero_grad(set_to_none=True)
-
-            pbar.set_postfix({"loss": raw_loss_value})
-
-            losses_history.append(
-                {
-                    "epoch": epoch + 1,
-                    "step": global_step,
-                    "loss": raw_loss_value,
-                }
-            )
-
-            global_step += 1
-
-        train_loss = epoch_loss / max(len(train_dataloader), 1)
-
-        eval_loss = compute_eval_loss(
-            model=model,
-            dataloader=valid_dataloader,
-            device=device,
-            bf16=config.training.bf16,
+        should_step = (
+            (idx + 1) % grad_accum_steps == 0
+            or idx == len(train_dataloader) - 1
         )
 
-        dev_loss_history.append(
+        if should_step:
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad(set_to_none=True)
+
+        pbar.set_postfix({"loss": raw_loss})
+
+        losses_history.append(
             {
                 "epoch": epoch + 1,
-                "eval_loss": eval_loss,
+                "step": global_step,
+                "loss": raw_loss,
             }
         )
 
-        min_eval_loss = min(min_eval_loss, eval_loss)
+        global_step += 1
 
-        dev_accuracy = compute_dev_accuracy(
-            model=model,
-            valid_dataset=valid_dataset,
-            processor=processor,
-            device=device,
-            bf16=config.training.bf16,
-            batch_size=batch_size,
-        )
+    train_loss = epoch_loss / max(len(train_dataloader), 1)
 
-        dev_accuracy_history.append(
-            {
-                "epoch": epoch + 1,
-                "dev_accuracy": dev_accuracy,
-            }
-        )
+    eval_loss = compute_eval_loss(
+        model=model,
+        dataloader=valid_dataloader,
+        device=device,
+    )
 
-        log_item = {
-            "epoch": epoch + 1,
-            "train_loss": train_loss,
-            "eval_loss": eval_loss,
-            "dev_accuracy": dev_accuracy,
-            "lr": optimizer.param_groups[0]["lr"],
-        }
+    min_eval_loss = min(min_eval_loss, eval_loss)
 
-        log_history.append(log_item)
+    dev_accuracy = compute_dev_accuracy(
+        model=model,
+        valid_dataset=valid_dataset,
+        processor=processor,
+        device=device,
+        max_new_tokens=20,
+    )
 
-        logger.info(
-            "Epoch %s | Train Loss: %.4f | Eval Loss: %.4f | Dev Acc: %.4f | LR: %s",
-            epoch + 1,
+    scheduler.step()
+
+    tracking_information.append(
+        (
             train_loss,
             eval_loss,
             dev_accuracy,
             optimizer.param_groups[0]["lr"],
         )
-
-        scheduler.step()
-
-        # Select best model based on dev accuracy, not loss.
-        if dev_accuracy > best_dev_accuracy:
-            best_dev_accuracy = dev_accuracy
-            early_stopping_hook = 0
-
-            save_path = out_checkpoint / "best_model"
-            model.save_pretrained(save_path)
-            processor.save_pretrained(save_path)
-
-            logger.info(
-                "Saved best model with dev accuracy %.4f to %s",
-                dev_accuracy,
-                save_path,
-            )
-
-        else:
-            early_stopping_hook += 1
-
-            if early_stopping_hook > config.training.patience:
-                logger.info(
-                    "Early stopping triggered after %s epochs.",
-                    epoch + 1,
-                )
-                break
-
-        with open(out_results / "losses.json", "w", encoding="utf-8") as file:
-            json.dump(losses_history, file, indent=4, ensure_ascii=False)
-
-        with open(out_results / "dev_loss.json", "w", encoding="utf-8") as file:
-            json.dump(dev_loss_history, file, indent=4, ensure_ascii=False)
-
-        with open(out_results / "dev_accuracy.json", "w", encoding="utf-8") as file:
-            json.dump(dev_accuracy_history, file, indent=4, ensure_ascii=False)
-
-        with open(out_results / "log.json", "w", encoding="utf-8") as file:
-            json.dump(log_history, file, indent=4, ensure_ascii=False)
-
-    with open(out_results / "best_dev_metric.json", "w", encoding="utf-8") as file:
-        json.dump(
-            {
-                "best_dev_accuracy": best_dev_accuracy,
-                "best_dev_loss": min_eval_loss,
-            },
-            file,
-            indent=4,
-            ensure_ascii=False,
-        )
-
-    logger.info(
-        "BLIP-2 training complete. Loading best model for evaluation on test set..."
     )
 
-    best_model_path = out_checkpoint / "best_model"
+    dev_loss_history.append(
+        {
+            "epoch": epoch + 1,
+            "eval_loss": eval_loss,
+        }
+    )
 
-    if best_model_path.exists():
-        from ..inference.inference_blip2 import run_infer as blip2_infer
+    dev_accuracy_history.append(
+        {
+            "epoch": epoch + 1,
+            "dev_accuracy": dev_accuracy,
+        }
+    )
 
-        class Args:
-            pass
+    log_item = {
+        "epoch": epoch + 1,
+        "train_loss": train_loss,
+        "eval_loss": eval_loss,
+        "dev_accuracy": dev_accuracy,
+        "best_dev_accuracy": best_dev_accuracy,
+        "lr": optimizer.param_groups[0]["lr"],
+    }
 
-        infer_args = Args()
-        infer_args.out_checkpoint = str(out_checkpoint)
-        infer_args.out_results = str(out_results)
-        infer_args.jsonl_dir = args.jsonl_dir or config.dataset.data_path
-        infer_args.image_dir = args.image_dir or config.dataset.image_dir
-        infer_args.batch_size = args.batch_size or config.training.batch_size
+    log_history.append(log_item)
 
-        blip2_infer(infer_args, config)
+    print(
+        f"Epoch: {epoch + 1} | "
+        f"Train Loss: {train_loss:.4f} | "
+        f"Eval Loss: {eval_loss:.4f} | "
+        f"Dev Acc: {dev_accuracy:.4f} | "
+        f"LR: {optimizer.param_groups[0]['lr']}"
+    )
+
+    # ========================================================
+    # Save best model theo dev accuracy
+    # ========================================================
+
+    if dev_accuracy > best_dev_accuracy:
+        best_dev_accuracy = dev_accuracy
+        early_stopping_hook = 0
+
+        best_model_path = output_dir / "best_model"
+        best_model_path.mkdir(parents=True, exist_ok=True)
+
+        model.save_pretrained(best_model_path)
+        processor.save_pretrained(best_model_path)
+
+        print(
+            f"Saved best model to {best_model_path} "
+            f"with dev accuracy = {best_dev_accuracy:.4f}"
+        )
 
     else:
-        logger.warning("Best model not found; skipping test evaluation.")
+        early_stopping_hook += 1
+
+        if early_stopping_hook > patience:
+            print(f"Early stopping at epoch {epoch + 1}")
+            break
+
+    # ========================================================
+    # Save logs mỗi epoch
+    # ========================================================
+
+    with open(output_dir / "losses.json", "w", encoding="utf-8") as f:
+        json.dump(losses_history, f, indent=4, ensure_ascii=False)
+
+    with open(output_dir / "dev_loss.json", "w", encoding="utf-8") as f:
+        json.dump(dev_loss_history, f, indent=4, ensure_ascii=False)
+
+    with open(output_dir / "dev_accuracy.json", "w", encoding="utf-8") as f:
+        json.dump(dev_accuracy_history, f, indent=4, ensure_ascii=False)
+
+    with open(output_dir / "log.json", "w", encoding="utf-8") as f:
+        json.dump(log_history, f, indent=4, ensure_ascii=False)
+
+    with open(output_dir / "tracking_information.pkl", "wb") as f:
+        pickle.dump(tracking_information, f)
+
+
+# ============================================================
+# Save final metric
+# ============================================================
+
+with open(output_dir / "best_dev_metric.json", "w", encoding="utf-8") as f:
+    json.dump(
+        {
+            "best_dev_accuracy": best_dev_accuracy,
+            "best_dev_loss": min_eval_loss,
+        },
+        f,
+        indent=4,
+        ensure_ascii=False,
+    )
+
+print("The finetuning process has done!")
+print(f"Best Dev Accuracy: {best_dev_accuracy:.4f}")
+print(f"Best Eval Loss: {min_eval_loss:.4f}")
