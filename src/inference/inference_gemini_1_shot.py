@@ -1,15 +1,17 @@
 """
-Inference predictor for Gemini 3.1 Flash-Lite (1-shot).
-Uses PIL.Image for image loading and minimal thinking mode.
+Inference predictor for multimodal models via OpenAI-compatible API (1-shot).
+Uses PIL.Image for image loading and base64 encoding.
 """
 
+import base64
+import io
 import random
 import time
 from pathlib import Path
 from typing import List
 
 import PIL.Image as Image
-from google import genai
+from openai import OpenAI
 
 from ..utils.io import load_jsonl
 
@@ -64,29 +66,26 @@ ALL_EXAMPLES = EXAMPLE_LIST_RULE1 + EXAMPLE_LIST_RULE2 + EXAMPLE_LIST_RULE3
 
 
 class GeminiOneShotPredictor:
-    def __init__(self, model_name: str, api_key: str, image_dir: str):
+    def __init__(self, model_name: str, api_key: str, image_dir: str, base_url: str = "https://api.tokenlab.sh/v1"):
         self.model_name = model_name
-        self.client = genai.Client(api_key=api_key)
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.image_dir = Path(image_dir)
-
-        self.generation_config = {
-            "temperature": 1.0,
-            "max_output_tokens": 20,
-        }
-        self.safety_settings = [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-        ]
 
         # Pre-select a random example
         self.example = random.choice(ALL_EXAMPLES)
-        self.example_image = Image.open(self.image_dir / self.example["image"])
+        self.example_image = self._encode_image(self.image_dir / self.example["image"])
+
+    def _encode_image(self, image_path: str) -> str:
+        with Image.open(image_path) as img:
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            buffered = io.BytesIO()
+            img.save(buffered, format="JPEG", quality=95)
+            return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     def predict(self, image_path: str, question: str, options: List[str]) -> str:
         try:
-            image = Image.open(image_path)
+            image_base64 = self._encode_image(image_path)
 
             prompt = (
                 "You are currently a senior expert in spatial relation reasoning. "
@@ -97,14 +96,31 @@ class GeminiOneShotPredictor:
             prompt2 = f"\n{self.example['text']}"
             prompt3 = f"\nInput: Image: \nQuestion: {question}, Options: {'; '.join(options)}.\nOutput:"
 
-            response = self.client.models.generate_content(
+            response = self.client.chat.completions.create(
                 model=self.model_name,
-                contents=[prompt, self.example_image, prompt2, image, prompt3],
-                config=self.generation_config,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{self.example_image}"}
+                            },
+                            {"type": "text", "text": prompt2},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
+                            },
+                            {"type": "text", "text": prompt3},
+                        ]
+                    }
+                ],
+                max_tokens=20,
             )
             
             time.sleep(0.5)
-            return response.text.strip().rstrip(".").lower()
+            return response.choices[0].message.content.strip().rstrip(".").lower()
         
         except Exception as e:
             print(f"Error during inference: {e}")
